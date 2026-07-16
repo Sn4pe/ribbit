@@ -1,0 +1,16 @@
+{
+	"name": "ribbit-workspace",
+	"private": true,
+	"type": "module",
+	"workspaces": ["packages/*", "apps/*"],
+	"scripts": {
+		"build": "bun run --filter ribbit build && bun run --filter ribbit-site build",
+		"test": "bun run --filter ribbit test",
+		"check": "bun run --filter '*' check",
+		"format": "bun run --filter '*' format",
+		"dev": "bun run --filter ribbit-site dev"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.4"
+	}
+}

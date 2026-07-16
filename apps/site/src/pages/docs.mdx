@@ -1,0 +1,113 @@
+---
+layout: ../layouts/DocsLayout.astro
+title: Documentation
+description: Install ribbit, render a mark, export a still. The whole surface fits on one page.
+---
+
+import Ribbit from "ribbit/svelte";
+
+## Install
+
+`ribbit` is framework-agnostic and ships zero runtime dependencies.
+
+```sh
+bun add ribbit
+```
+
+The core draws with the Canvas 2D API, so it runs anywhere a canvas or an
+offscreen canvas exists. The optional Svelte wrapper lives at `ribbit/svelte`.
+
+## Seeds
+
+A seed is any string or number. The same seed always produces the same mark.
+
+```ts
+import { seedFromString, toSeed } from "ribbit";
+
+seedFromString("null-frog"); // 32-bit unsigned hash
+toSeed("null-frog"); // same as above
+toSeed(42); // numbers pass straight through
+```
+
+## Render
+
+`render` paints onto a canvas element or an existing 2D context. Pass a context
+to control device pixel ratio yourself.
+
+```ts
+import { render } from "ribbit";
+
+const canvas = document.querySelector("canvas");
+render(canvas, "null-frog", { size: 256, pattern: "wave" });
+
+// t is time. 0 is a static frame, advancing it evolves the field.
+const ctx = canvas.getContext("2d");
+function frame(now) {
+  render(ctx, "null-frog", { size: 256, pattern: "dither", t: now / 1000 });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+```
+
+Options: `size` (default 200), `pattern` (`"dither" | "glyph" | "wave"`,
+default `"dither"`) and `t` (default 0).
+
+Each pattern also has a direct draw function if you want to skip the dispatch:
+`drawDither(ctx, seed, size, t?)`, `drawGlyph(...)` and `drawWave(...)`.
+
+<div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+  <Ribbit client:visible seed="null-frog" pattern="dither" size={112} radius="10px" animated />
+  <Ribbit client:visible seed="null-frog" pattern="glyph" size={112} radius="10px" animated />
+  <Ribbit client:visible seed="null-frog" pattern="wave" size={112} radius="10px" animated />
+</div>
+
+## Static exports
+
+Render a still to a PNG or an SVG. Both take an optional `preset`: `"og"` gives
+a 1200x630 cover, `"avatar"` gives a square.
+
+```ts
+import { toDataURL, toBlob, toSVG } from "ribbit";
+
+const url = toDataURL("ribbit", { pattern: "glyph", size: 128 });
+const svg = toSVG("ribbit", { preset: "avatar", size: 256 });
+const png = await toBlob("ribbit", { preset: "og" }); // 1200x630 Blob
+```
+
+`toSVG` returns a standalone, dependency-free SVG string you can inline, write
+to disk, or use as an `<img>` source.
+
+## Svelte
+
+`svelte` is an optional peer dependency. The component renders one static frame
+on mount, so the mark is visible before any animation runs.
+
+```svelte
+<script>
+  import Ribbit from "ribbit/svelte";
+</script>
+
+<Ribbit seed="null-frog" size={64} pattern="dither" radius="50%" animated />
+```
+
+Props:
+
+- `seed` — any string or number. Required.
+- `size` — logical pixel size of the square mark. Default `64`.
+- `pattern` — `"dither" | "glyph" | "wave"`. Default `"dither"`.
+- `radius` — CSS border radius for the canvas. Default `"50%"`.
+- `animated` — run a `requestAnimationFrame` loop. Default `false`.
+- `class` — extra class(es) for the canvas.
+
+When `animated` is on, the loop pauses while the canvas is offscreen and is
+forced static under `prefers-reduced-motion`. Device pixel ratio is capped at
+1.5, so a mark stays crisp without over-rendering.
+
+## Palette
+
+The palette is exported for when you want the marks to sit in a wider system.
+
+```ts
+import { RAMP, BG } from "ribbit";
+// RAMP: six greens, dark to light. BG: the ink behind the field.
+```

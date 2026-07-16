@@ -1,0 +1,61 @@
+{
+	"name": "ribbit",
+	"version": "0.1.0",
+	"description": "Turn any seed into deterministic generative art on a canvas. Zero dependencies.",
+	"type": "module",
+	"license": "MIT",
+	"author": "Null-Frog",
+	"homepage": "https://ribbit.nullfrog.dev",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/null-frog/ribbit"
+	},
+	"keywords": [
+		"generative",
+		"canvas",
+		"seed",
+		"deterministic",
+		"art",
+		"avatar",
+		"svelte"
+	],
+	"sideEffects": false,
+	"files": [
+		"dist",
+		"svelte",
+		"README.md",
+		"LICENSE"
+	],
+	"types": "./dist/index.d.ts",
+	"module": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./svelte": {
+			"types": "./svelte/index.d.ts",
+			"svelte": "./svelte/Ribbit.svelte",
+			"default": "./svelte/Ribbit.svelte"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"test": "bun test",
+		"check": "biome check .",
+		"format": "biome check --write ."
+	},
+	"peerDependencies": {
+		"svelte": "^5.0.0"
+	},
+	"peerDependenciesMeta": {
+		"svelte": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.4",
+		"svelte": "^5.56.5",
+		"typescript": "^6.0.3"
+	}
+}

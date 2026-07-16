@@ -1,0 +1,14 @@
+# This file is managed by Copier - do not edit it by hand.
+_commit: 512a245
+_src_path: frogspawn-astro
+accent: '#5c9e63'
+analytics: none
+author: Null-Frog
+project_description: Deterministic generative marks from any seed.
+project_name: Ribbit
+project_slug: ribbit-site
+site_type: landing
+site_url: https://ribbit.nullfrog.dev
+with_mdx: true
+with_sitemap: true
+with_svelte: true

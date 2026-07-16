@@ -1,0 +1,45 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import "../styles/global.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const {
+	title = "ribbit",
+	description = "Turn any seed into deterministic generative art on a canvas. Zero dependencies, tiny, framework-agnostic.",
+} = Astro.props;
+const pageTitle = title === "ribbit" ? "ribbit — generative marks from any seed" : `${title} | ribbit`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL("/og.svg", Astro.site);
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="canonical" href={canonical} />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#0a0d0b" />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:image" content={ogImage} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<title>{pageTitle}</title>
+	</head>
+	<body class="min-h-screen antialiased">
+		<SiteHeader currentPath={Astro.url.pathname} />
+		<main>
+			<slot />
+		</main>
+		<SiteFooter />
+	</body>
+</html>

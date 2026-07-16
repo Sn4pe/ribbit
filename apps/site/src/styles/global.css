@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+/*
+  ribbit - one world: a night pond rendered as a generative field.
+  Green-black tonal base (matches the engine's own BG), no graph-paper grid,
+  no accent splashes. The signature is the generative art itself, so the type
+  stays quiet and the color stays tonal. Dark only, on purpose.
+*/
+
+:root {
+	--bg: #0a0d0b;
+	--surface: #0f140f;
+	--surface-2: #141b14;
+	--fg: #e8f0e4;
+	--muted: #8b9a8a;
+	--faint: #5f6d5e;
+	--line: #1e2a1e;
+	--line-strong: #2c3c2b;
+	--brand: #5c9e63;
+	--brand-bright: #86c765;
+	--brand-dim: #3a6b45;
+	--radius: 0.5rem;
+	color-scheme: dark;
+}
+
+@theme inline {
+	--font-sans: "Geist Variable", system-ui, sans-serif;
+	--font-mono: "Geist Mono Variable", ui-monospace, monospace;
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-fg: var(--fg);
+	--color-muted: var(--muted);
+	--color-faint: var(--faint);
+	--color-line: var(--line);
+	--color-line-strong: var(--line-strong);
+	--color-brand: var(--brand);
+	--color-brand-bright: var(--brand-bright);
+	--color-brand-dim: var(--brand-dim);
+	--radius-card: var(--radius);
+}
+
+@layer base {
+	* {
+		border-color: var(--line);
+	}
+
+	html {
+		scroll-behavior: smooth;
+	}
+
+	body {
+		min-width: 20rem;
+		background: var(--bg);
+		color: var(--fg);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	/* Premium grain: a fine, static film on the substrate, behind everything. */
+	body::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		opacity: 0.045;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	}
+
+	::selection {
+		background: var(--brand);
+		color: #071008;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--brand);
+		outline-offset: 2px;
+		border-radius: 2px;
+	}
+}
+
+/* A quiet inline-code / seed treatment: mono, only where content is data. */
+.mono {
+	font-family: var(--font-mono);
+	font-feature-settings: "ss01";
+}
+
+/* Docs prose. Code blocks are Shiki-highlighted; wrap them in a real panel. */
+.prose {
+	max-width: 44rem;
+}
+.prose h2 {
+	margin-top: 3rem;
+	margin-bottom: 0.75rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: var(--fg);
+}
+.prose h3 {
+	margin-top: 2rem;
+	margin-bottom: 0.5rem;
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: var(--fg);
+}
+.prose p {
+	margin-top: 1rem;
+	color: var(--muted);
+	line-height: 1.75;
+}
+.prose ul {
+	margin-top: 1rem;
+	padding-left: 1.1rem;
+	list-style: none;
+	color: var(--muted);
+	line-height: 1.9;
+}
+.prose ul li {
+	position: relative;
+}
+.prose ul li::before {
+	content: "";
+	position: absolute;
+	left: -1.1rem;
+	top: 0.75em;
+	width: 0.4rem;
+	height: 1px;
+	background: var(--brand-dim);
+}
+.prose a {
+	color: var(--brand-bright);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	text-decoration-color: var(--brand-dim);
+}
+.prose :not(pre) > code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	color: var(--brand-bright);
+	background: var(--surface-2);
+	padding: 0.1em 0.35em;
+	border-radius: 4px;
+}
+.prose pre {
+	margin-top: 1.25rem;
+	padding: 1.1rem 1.25rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: #080b09 !important;
+	overflow-x: auto;
+	font-size: 0.86rem;
+	line-height: 1.7;
+}
+.prose pre code {
+	font-family: var(--font-mono);
+}

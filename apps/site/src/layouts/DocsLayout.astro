@@ -1,0 +1,22 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+	frontmatter?: { title?: string; description?: string };
+}
+
+const { frontmatter } = Astro.props;
+const title = frontmatter?.title ?? "Docs";
+const description = frontmatter?.description;
+---
+
+<BaseLayout title={title} description={description}>
+	<section class="mx-auto max-w-3xl px-5 py-16 lg:px-8">
+		<p class="mono text-sm text-brand">the manual</p>
+		<h1 class="mt-2 text-4xl font-semibold tracking-tight text-fg sm:text-5xl">{title}</h1>
+		{description && <p class="mt-4 text-lg text-muted">{description}</p>}
+		<article class="prose mt-10">
+			<slot />
+		</article>
+	</section>
+</BaseLayout>

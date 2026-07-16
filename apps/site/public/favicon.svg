@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<title>Null-Frog mark</title>
+	<rect width="64" height="64" rx="16" fill="#10150f" />
+	<path d="M15 35c0-13 8-21 17-21s17 8 17 21c0 9-7 15-17 15s-17-6-17-15Z" fill="#86c765" />
+	<circle cx="24" cy="29" r="5" fill="#10150f" />
+	<circle cx="40" cy="29" r="5" fill="#10150f" />
+	<path d="M24 40c5 3 11 3 16 0" fill="none" stroke="#10150f" stroke-width="3" stroke-linecap="round" />
+</svg>

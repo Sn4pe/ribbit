@@ -1,0 +1,159 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import LiveGrid from "../components/LiveGrid.svelte";
+import Playground from "../components/Playground.svelte";
+import Ribbit from "ribbit/svelte";
+
+// Tagline options (no em dashes, no semicolons):
+//   1. One seed in, the same mark out, every single time.
+//   2. Deterministic generative marks for anything you can name.
+
+// Curated specimen strip for the hero. Varied seeds and patterns.
+const strip = [
+	{ seed: "null-frog", pattern: "wave" },
+	{ seed: "ribbit", pattern: "dither" },
+	{ seed: "croak", pattern: "glyph" },
+	{ seed: "frogspawn", pattern: "wave" },
+	{ seed: "heron", pattern: "dither" },
+	{ seed: "dragonfly", pattern: "glyph" },
+	{ seed: "lily-pad", pattern: "wave" },
+	{ seed: "dusk", pattern: "dither" },
+] as const;
+
+const patterns = [
+	{
+		seed: "reed",
+		pattern: "dither",
+		name: "dither",
+		note: "An ordered Bayer dither over a layered value field. Crisp, print-like, tonal.",
+	},
+	{
+		seed: "spore",
+		pattern: "glyph",
+		name: "glyph",
+		note: "The same field sampled into monospace glyphs. Reads like a quiet data console.",
+	},
+	{
+		seed: "brook",
+		pattern: "wave",
+		name: "wave",
+		note: "Seven stacked wave layers, dark to light. Soft horizons over the pond.",
+	},
+] as const;
+---
+
+<BaseLayout>
+	<!-- HERO: the signature is the live field of marks. It owns the fold. -->
+	<section class="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden">
+		<!-- Specimen strip, full-bleed, alive. Static under reduced-motion. -->
+		<div class="pointer-events-none relative -mt-4 mb-14 flex gap-4 overflow-hidden px-5 lg:px-8 [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
+			{
+				strip.map((m) => (
+					<div class="pointer-events-auto shrink-0">
+						<Ribbit client:visible seed={m.seed} pattern={m.pattern} size={132} radius="10px" animated />
+					</div>
+				))
+			}
+		</div>
+
+		<div class="mx-auto w-full max-w-5xl px-5 lg:px-8">
+			<h1 class="mono text-[19vw] font-semibold leading-[0.82] tracking-[-0.05em] text-fg sm:text-8xl lg:text-9xl">
+				ribbit<span class="text-brand">.</span>
+			</h1>
+			<p class="mt-7 max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
+				One seed in, the same mark out, every single time. A tiny, zero-dependency engine that turns any string or number into deterministic generative art.
+			</p>
+
+			<div class="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
+				<div class="mono inline-flex items-center gap-3 rounded-card border border-line-strong bg-surface px-4 py-3 text-sm">
+					<span class="text-faint">$</span>
+					<code class="text-fg" id="install-cmd">bun add ribbit</code>
+					<button
+						type="button"
+						class="ml-1 text-faint transition-colors hover:text-brand-bright"
+						data-copy="bun add ribbit"
+						aria-label="Copy install command"
+					>
+						<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true" data-copy-icon><rect x="5" y="5" width="8" height="8" rx="1.5"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11"/></svg>
+						<span class="sr-only" data-copy-status aria-live="polite"></span>
+					</button>
+				</div>
+
+				<div class="mono flex items-center gap-6 text-sm">
+					<a class="inline-flex items-center gap-2 text-muted transition-colors hover:text-fg" href="https://github.com/null-frog/ribbit">
+						<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+						GitHub
+					</a>
+					<a class="inline-flex items-center gap-2 text-muted transition-colors hover:text-fg" href="https://www.npmjs.com/package/ribbit">
+						<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M2 2v20h20V2H2zm18 18h-3V6H9v14H4V4h16v16z"/></svg>
+						npm
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- THREE FIELDS: specimen-driven, no icon tiles, no feature cards. -->
+	<section class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+		<h2 class="max-w-2xl text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Three ways to read the same field.</h2>
+		<p class="mono mt-3 max-w-2xl text-sm text-muted">Every pattern samples one seeded value field. Switch the lens, keep the seed.</p>
+		<div class="mt-10 grid gap-8 sm:grid-cols-3">
+			{
+				patterns.map((p) => (
+					<article class="flex flex-col">
+						<Ribbit client:visible seed={p.seed} pattern={p.pattern} size={280} radius="12px" />
+						<div class="mt-4 flex items-baseline justify-between">
+							<h3 class="mono text-base text-fg">{p.name}</h3>
+							<span class="mono text-xs text-faint">{p.seed}</span>
+						</div>
+						<p class="mt-2 text-sm leading-relaxed text-muted">{p.note}</p>
+					</article>
+				))
+			}
+		</div>
+	</section>
+
+	<!-- LIVE GRID: infinite scroll of deterministic marks. -->
+	<section id="grid" class="border-t border-line bg-surface/30">
+		<div class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+			<div class="flex flex-wrap items-end justify-between gap-4">
+				<h2 class="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">A field with no edges.</h2>
+				<p class="mono max-w-md text-sm text-muted">Keep scrolling. New seeds generate as you go, each hover brings one mark to life.</p>
+			</div>
+			<div class="mt-10">
+				<LiveGrid client:visible />
+			</div>
+		</div>
+	</section>
+
+	<!-- PLAYGROUND -->
+	<section id="playground" class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+		<div class="flex flex-wrap items-end justify-between gap-4">
+			<h2 class="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Tune one, take it with you.</h2>
+			<p class="mono max-w-md text-sm text-muted">Change the seed, pattern and size, then export a PNG. The same inputs render the same mark anywhere.</p>
+		</div>
+		<div class="mt-10">
+			<Playground client:load />
+		</div>
+	</section>
+</BaseLayout>
+
+<script>
+	for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+		btn.addEventListener("click", async () => {
+			const text = btn.dataset.copy ?? "";
+			const status = btn.querySelector<HTMLElement>("[data-copy-status]");
+			try {
+				await navigator.clipboard.writeText(text);
+				if (status) status.textContent = "Copied";
+				btn.classList.add("text-brand-bright");
+				setTimeout(() => {
+					if (status) status.textContent = "";
+					btn.classList.remove("text-brand-bright");
+				}, 1400);
+			} catch {
+				if (status) status.textContent = "Copy failed";
+			}
+		});
+	}
+</script>
