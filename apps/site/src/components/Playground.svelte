@@ -1,36 +1,73 @@
 <script lang="ts">
-import { type Pattern, render, toBlob, toSeed } from "ribbit";
+import {
+	PALETTES,
+	type PaletteName,
+	type Pattern,
+	type Preset,
+	render,
+	type Shape,
+	toBlob,
+	toSeed,
+	toWebM,
+} from "ribbit";
 
 const PATTERNS: Pattern[] = ["dither", "glyph", "wave"];
+const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
 const POOL = [
-	"null-frog", "ribbit", "croak", "moss-01", "heron", "dusk", "lily-pad",
-	"spore", "dragonfly", "peat", "glint", "reed",
+	"null-frog",
+	"ribbit",
+	"croak",
+	"moss-01",
+	"heron",
+	"dusk",
+	"lily-pad",
+	"spore",
+	"dragonfly",
+	"peat",
+	"glint",
+	"reed",
 ];
 
 let seed = $state("null-frog");
 let pattern = $state<Pattern>("dither");
+let paletteName = $state<PaletteName>("moss");
 let size = $state(256);
+let format = $state<Preset>("avatar");
+let shape = $state<Shape>("circle");
 let animated = $state(false);
-let busy = $state(false);
+let busy = $state<"png" | "webm" | null>(null);
+let progress = $state(0);
+let exportError = $state("");
 
 let canvas: HTMLCanvasElement;
 
 $effect(() => {
-	// Deps: seed, pattern, size, animated.
+	// Deps: seed, pattern, paletteName, size, format, shape, animated.
 	const s = toSeed(seed || " ");
 	const pat = pattern;
+	const colors = PALETTES[paletteName];
 	const px = size;
+	const output = format;
+	const crop = shape;
 	const wantsMotion = animated;
 
 	const dpr = Math.min(1.5, window.devicePixelRatio || 1);
 	const draw = (t: number) => {
-		const css = canvas.clientWidth || px;
-		canvas.width = Math.round(css * dpr);
-		canvas.height = Math.round(css * dpr);
+		const cssWidth = canvas.clientWidth || px;
+		const cssHeight = output === "og" ? cssWidth * (630 / 1200) : cssWidth;
+		canvas.width = Math.round(cssWidth * dpr);
+		canvas.height = Math.round(cssHeight * dpr);
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		render(ctx, s, { size: css, pattern: pat, t });
+		render(ctx, s, {
+			width: cssWidth,
+			height: cssHeight,
+			pattern: pat,
+			palette: colors,
+			shape: output === "avatar" ? crop : "rectangle",
+			t,
+		});
 	};
 
 	draw(0);
@@ -51,39 +88,81 @@ $effect(() => {
 
 function randomize() {
 	const pick = POOL[Math.floor(Math.random() * POOL.length)];
-	seed = pick === seed ? `${pick}-${Math.floor(Math.random() * 90 + 10)}` : pick;
+	seed =
+		pick === seed ? `${pick}-${Math.floor(Math.random() * 90 + 10)}` : pick;
 }
 
 async function exportPng() {
-	busy = true;
+	busy = "png";
+	exportError = "";
 	try {
 		const blob = await toBlob(seed || "ribbit", {
 			pattern,
-			preset: "avatar",
+			palette: PALETTES[paletteName],
+			preset: format,
 			size,
+			shape: format === "avatar" ? shape : "rectangle",
 		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `ribbit-${(seed || "ribbit").replace(/[^a-z0-9-]/gi, "_")}.png`;
-		document.body.appendChild(a);
-		a.click();
-		a.remove();
-		URL.revokeObjectURL(url);
+		download(blob, "png");
+	} catch (error) {
+		exportError = error instanceof Error ? error.message : "PNG export failed";
 	} finally {
-		busy = false;
+		busy = null;
 	}
+}
+
+async function exportWebm() {
+	busy = "webm";
+	progress = 0;
+	exportError = "";
+	try {
+		const palette = PALETTES[paletteName];
+		const blob = await toWebM(seed || "ribbit", {
+			pattern,
+			palette,
+			preset: format,
+			size,
+			shape: format === "avatar" ? shape : "rectangle",
+			duration: 5,
+			fps: 30,
+			matte: palette.background,
+			videoBitsPerSecond: format === "og" ? 4_000_000 : 2_000_000,
+			onProgress: (value) => (progress = value),
+		});
+		download(blob, "webm");
+	} catch (error) {
+		exportError = error instanceof Error ? error.message : "WebM export failed";
+	} finally {
+		busy = null;
+		progress = 0;
+	}
+}
+
+function download(blob: Blob, extension: "png" | "webm") {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `ribbit-${(seed || "ribbit").replace(/[^a-z0-9-]/gi, "_")}-${paletteName}-${format}${format === "avatar" ? `-${shape}` : ""}.${extension}`;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	URL.revokeObjectURL(url);
 }
 </script>
 
 <div class="grid gap-6 rounded-card border border-line bg-surface/60 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
 	<!-- Preview -->
-	<div class="flex items-center justify-center rounded-card border border-line bg-[#080b09] p-6">
+	<div class="flex min-h-80 items-center justify-center rounded-card border border-line bg-[#080b09] p-6">
 		<canvas
 			bind:this={canvas}
-			class="w-full max-w-[22rem] rounded-card"
-			style="aspect-ratio:1/1;background:#0a0d0b"
-			aria-label="Live preview of the mark for seed {seed}, pattern {pattern}"
+			class="w-full"
+			class:max-w-[22rem]={format === "avatar"}
+			class:max-w-[40rem]={format === "og"}
+			class:rounded-full={format === "avatar" && shape === "circle"}
+			class:rounded-card={format === "og" || shape === "rectangle"}
+			style:aspect-ratio={format === "og" ? "1200/630" : "1/1"}
+			style:background-color={PALETTES[paletteName].background}
+			aria-label="Live {format} preview of the mark for seed {seed}, pattern {pattern}, palette {paletteName}"
 		></canvas>
 	</div>
 
@@ -110,6 +189,42 @@ async function exportPng() {
 		</label>
 
 		<div>
+			<span class="mono text-xs uppercase tracking-wider text-faint">format</span>
+			<div class="mt-2 grid grid-cols-2 gap-1 rounded-card border border-line-strong bg-bg p-1" role="group" aria-label="Output format">
+				{#each ["avatar", "og"] as output (output)}
+					<button
+						type="button"
+						class="mono rounded-[0.35rem] px-2 py-1.5 text-sm transition-colors"
+						class:bg-brand-dim={format === output}
+						class:text-fg={format === output}
+						class:text-muted={format !== output}
+						aria-pressed={format === output}
+						onclick={() => (format = output as Preset)}
+					>{output === "og" ? "OG · 1200×630" : "avatar"}</button>
+				{/each}
+			</div>
+		</div>
+
+		{#if format === "avatar"}
+			<div>
+				<span class="mono text-xs uppercase tracking-wider text-faint">shape</span>
+				<div class="mt-2 grid grid-cols-2 gap-1 rounded-card border border-line-strong bg-bg p-1" role="group" aria-label="Avatar shape">
+					{#each ["circle", "rectangle"] as crop (crop)}
+						<button
+							type="button"
+							class="mono rounded-[0.35rem] px-2 py-1.5 text-sm transition-colors"
+							class:bg-brand-dim={shape === crop}
+							class:text-fg={shape === crop}
+							class:text-muted={shape !== crop}
+							aria-pressed={shape === crop}
+							onclick={() => (shape = crop as Shape)}
+						>{crop === "rectangle" ? "square" : crop}</button>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<div>
 			<span class="mono text-xs uppercase tracking-wider text-faint">pattern</span>
 			<div class="mt-2 grid grid-cols-3 gap-1 rounded-card border border-line-strong bg-bg p-1" role="group" aria-label="Pattern">
 				{#each PATTERNS as p (p)}
@@ -126,6 +241,31 @@ async function exportPng() {
 			</div>
 		</div>
 
+		<div>
+			<span class="mono text-xs uppercase tracking-wider text-faint">palette</span>
+			<div class="mt-2 grid grid-cols-2 gap-1 rounded-card border border-line-strong bg-bg p-1" role="group" aria-label="Color palette">
+				{#each PALETTE_NAMES as name (name)}
+					<button
+						type="button"
+						class="mono flex items-center justify-between gap-2 rounded-[0.35rem] px-2 py-1.5 text-xs transition-colors"
+						class:bg-surface-2={paletteName === name}
+						class:text-fg={paletteName === name}
+						class:text-muted={paletteName !== name}
+						aria-pressed={paletteName === name}
+						onclick={() => (paletteName = name)}
+					>
+						{name}
+						<span class="flex -space-x-0.5" aria-hidden="true">
+							{#each PALETTES[name].ramp.slice(-3) as color (color)}
+								<span class="size-2.5 rounded-full border border-bg" style:background-color={color}></span>
+							{/each}
+						</span>
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		{#if format === "avatar"}
 		<label class="block">
 			<span class="mono flex items-center justify-between text-xs uppercase tracking-wider text-faint">
 				<span>size</span><span class="text-muted">{size}px</span>
@@ -139,6 +279,11 @@ async function exportPng() {
 				bind:value={size}
 			/>
 		</label>
+		{:else}
+			<div class="mono flex items-center justify-between text-xs uppercase tracking-wider text-faint">
+				<span>export size</span><span class="text-muted">1200 × 630px</span>
+			</div>
+		{/if}
 
 		<div class="flex items-center justify-between">
 			<span class="mono text-xs uppercase tracking-wider text-faint">animate</span>
@@ -160,11 +305,22 @@ async function exportPng() {
 			</button>
 		</div>
 
-		<button
-			type="button"
-			class="mono mt-1 rounded-card border border-brand-dim bg-brand-dim/20 px-4 py-2.5 text-sm text-brand-bright transition-colors hover:bg-brand-dim/35 disabled:opacity-50"
-			onclick={exportPng}
-			disabled={busy}
-		>{busy ? "exporting..." : "export PNG"}</button>
+		<div class="mt-1 grid grid-cols-2 gap-2">
+			<button
+				type="button"
+				class="mono rounded-card border border-brand-dim bg-brand-dim/20 px-3 py-2.5 text-xs text-brand-bright transition-colors hover:bg-brand-dim/35 disabled:opacity-50"
+				onclick={exportPng}
+				disabled={busy !== null}
+			>{busy === "png" ? "exporting..." : "export PNG"}</button>
+			<button
+				type="button"
+				class="mono rounded-card border border-line-strong bg-surface-2 px-3 py-2.5 text-xs text-fg transition-colors hover:border-brand-dim disabled:opacity-50"
+				onclick={exportWebm}
+				disabled={busy !== null}
+			>{busy === "webm" ? `recording ${Math.round(progress * 100)}%` : "export WebM · 5s"}</button>
+		</div>
+		{#if exportError}
+			<p class="mono -mt-3 text-xs text-[#d98b78]" role="alert">{exportError}</p>
+		{/if}
 	</div>
 </div>
