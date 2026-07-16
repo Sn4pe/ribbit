@@ -1,5 +1,5 @@
 import type { Component } from "svelte";
-import type { Pattern } from "../dist/index.js";
+import type { Palette, Pattern, Shape } from "../dist/index.js";
 
 export interface RibbitProps {
 	/** Any string or number. The same seed always yields the same mark. */
@@ -8,6 +8,10 @@ export interface RibbitProps {
 	size?: number;
 	/** Which generative pattern to draw. Default "dither". */
 	pattern?: Pattern;
+	/** Full rectangle or a transparent circular crop. Default "rectangle". */
+	shape?: Shape;
+	/** Background and dark-to-light tonal ramp. */
+	palette?: Palette;
 	/** CSS border-radius for the canvas. Default "50%". */
 	radius?: string;
 	/** Run a requestAnimationFrame loop that evolves the field. Default false. */
