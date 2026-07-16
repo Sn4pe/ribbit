@@ -11,10 +11,25 @@ bun add ribbit
 ## Core
 
 ```ts
-import { render, toBlob, toSVG } from "ribbit";
+import { PALETTES, render, toBlob, toSVG, toWebM } from "ribbit";
 
 // Paint onto a canvas element (or an existing 2D context).
 render(canvas, "null-frog", { size: 256, pattern: "wave" });
+
+// Built-in or fully custom palettes work in Canvas, PNG and SVG.
+render(canvas, "null-frog", {
+  size: 256,
+  pattern: "wave",
+  palette: PALETTES.tide,
+});
+
+// Any aspect ratio, plus a true transparent circular crop.
+render(wideCanvas, "null-frog", { width: 640, height: 360, pattern: "glyph" });
+const avatar = await toBlob("ribbit", {
+  preset: "avatar",
+  size: 256,
+  shape: "circle",
+});
 
 // t is time. 0 is a static frame, advancing it evolves the field.
 render(ctx, 42, { pattern: "dither", t: performance.now() / 1000 });
@@ -22,19 +37,26 @@ render(ctx, 42, { pattern: "dither", t: performance.now() / 1000 });
 // Static exports.
 const svg = toSVG("ribbit", { pattern: "glyph", preset: "avatar", size: 128 });
 const png = await toBlob("ribbit", { preset: "og" }); // 1200x630 Blob
+const webm = await toWebM("ribbit", {
+  preset: "og",
+  pattern: "wave",
+  duration: 5,
+  fps: 30,
+}); // animated WebM Blob, recorded in real time
 ```
 
 ### API
 
 - `seedFromString(s)` and `toSeed(input)` normalize a string or number to a uint32 seed.
 - `render(target, seed, options?)` where `target` is a canvas or a 2D context.
-- `drawDither(ctx, seed, size, t?)`, `drawGlyph(...)`, `drawWave(...)` draw one pattern.
+- `drawDither(ctx, seed, size, t?, palette?)`, `drawGlyph(...)`, `drawWave(...)` draw one pattern.
 - `toDataURL(seed, options?)` and `toBlob(seed, options?)` produce a PNG.
+- `toWebM(seed, options?)` records an animated WebM in the browser.
 - `toSVG(seed, options?)` produces a standalone SVG string.
-- `RAMP` and `BG` are the palette.
+- `PALETTES` provides moss, tide, ember and mono; `RAMP` and `BG` alias moss.
 
-`options`: `{ size?, pattern?: "dither" | "glyph" | "wave", t? }`. Export helpers
-also take `preset?: "og" | "avatar"`.
+`options`: `{ size?, width?, height?, pattern?, shape?, palette?, t? }`.
+Export helpers also take `preset?: "og" | "avatar"`; OG is always 1200x630.
 
 ## Svelte
 
@@ -45,7 +67,7 @@ also take `preset?: "og" | "avatar"`.
   import Ribbit from "ribbit/svelte";
 </script>
 
-<Ribbit seed="null-frog" size={64} pattern="dither" radius="50%" animated />
+<Ribbit seed="null-frog" size={64} pattern="dither" shape="circle" radius="50%" animated />
 ```
 
 Renders one static frame on mount, so the mark is always visible. `animated`

@@ -131,6 +131,31 @@
 	height: 1px;
 	background: var(--brand-dim);
 }
+.prose table {
+	width: 100%;
+	margin-top: 1.25rem;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+	color: var(--muted);
+}
+.prose th,
+.prose td {
+	padding: 0.7rem 0.8rem;
+	border-bottom: 1px solid var(--line);
+	text-align: left;
+	vertical-align: top;
+}
+.prose th {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--fg);
+}
+.prose table code {
+	white-space: nowrap;
+}
 .prose a {
 	color: var(--brand-bright);
 	text-decoration: underline;

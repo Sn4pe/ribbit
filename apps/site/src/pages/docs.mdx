@@ -1,59 +1,63 @@
 ---
 layout: ../layouts/DocsLayout.astro
 title: Documentation
-description: Install ribbit, render a mark, export a still. The whole surface fits on one page.
+description: From one seed to responsive canvas marks, circular avatars, animated fields and 1200×630 social covers.
 ---
 
 import Ribbit from "ribbit/svelte";
 
-## Install
+## Quick start
 
-`ribbit` is framework-agnostic and ships zero runtime dependencies.
+`ribbit` is a deterministic Canvas 2D renderer with no runtime dependencies.
+Give it a string or number and the same inputs produce the same artwork.
 
 ```sh
 bun add ribbit
 ```
 
-The core draws with the Canvas 2D API, so it runs anywhere a canvas or an
-offscreen canvas exists. The optional Svelte wrapper lives at `ribbit/svelte`.
-
-## Seeds
-
-A seed is any string or number. The same seed always produces the same mark.
-
-```ts
-import { seedFromString, toSeed } from "ribbit";
-
-seedFromString("null-frog"); // 32-bit unsigned hash
-toSeed("null-frog"); // same as above
-toSeed(42); // numbers pass straight through
-```
-
-## Render
-
-`render` paints onto a canvas element or an existing 2D context. Pass a context
-to control device pixel ratio yourself.
-
 ```ts
 import { render } from "ribbit";
 
 const canvas = document.querySelector("canvas");
-render(canvas, "null-frog", { size: 256, pattern: "wave" });
-
-// t is time. 0 is a static frame, advancing it evolves the field.
-const ctx = canvas.getContext("2d");
-function frame(now) {
-  render(ctx, "null-frog", { size: 256, pattern: "dither", t: now / 1000 });
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
+render(canvas, "null-frog", {
+  size: 256,
+  pattern: "dither",
+});
 ```
 
-Options: `size` (default 200), `pattern` (`"dither" | "glyph" | "wave"`,
-default `"dither"`) and `t` (default 0).
+The core is framework-agnostic. The optional Svelte component is exported from
+`ribbit/svelte`. PNG and WebM helpers need a browser DOM; SVG generation also
+works on the server.
 
-Each pattern also has a direct draw function if you want to skip the dispatch:
-`drawDither(ctx, seed, size, t?)`, `drawGlyph(...)` and `drawWave(...)`.
+## How seeds work
+
+A seed can be any string or number. Strings are converted to unsigned 32-bit
+values with FNV-1a; numbers are normalized to the same range.
+
+```ts
+import { seedFromString, toSeed } from "ribbit";
+
+seedFromString("null-frog"); // stable unsigned integer
+toSeed("null-frog");        // the same integer
+toSeed(42);                 // 42
+toSeed(-1);                 // 4294967295
+```
+
+The seed controls more than the position of a texture. It selects a field
+family, rotation, scale, phase and pattern-specific structure. Wave marks also
+vary their direction, layer count, palette order and orientation.
+
+Determinism means the same seed, options and package version produce the same
+result. If marks are persistent identities, pin the package version before
+upgrading because a future rendering change can intentionally evolve them.
+
+## Patterns
+
+| Pattern | Character | Best suited to |
+| --- | --- | --- |
+| `dither` | Square Bayer cells over a continuous field | Avatars, pixel art, compact marks |
+| `glyph` | The field sampled as monospace symbols | Technical identities, editorial graphics |
+| `wave` | Five to nine layered contours | Covers, backgrounds, animated surfaces |
 
 <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
   <Ribbit client:visible seed="null-frog" pattern="dither" size={112} radius="10px" animated />
@@ -61,53 +65,349 @@ Each pattern also has a direct draw function if you want to skip the dispatch:
   <Ribbit client:visible seed="null-frog" pattern="wave" size={112} radius="10px" animated />
 </div>
 
+## Rendering to Canvas
+
+Pass an `HTMLCanvasElement` when ribbit should set its pixel dimensions for
+you. Pass an existing `CanvasRenderingContext2D` when you need control over
+device pixel ratio, transforms or a larger composition.
+
+```ts
+import { render } from "ribbit";
+
+// Square canvas.
+render(canvas, "moss", { size: 256, pattern: "wave" });
+
+// Any aspect ratio. The field extends instead of stretching.
+render(banner, "moss", {
+  width: 960,
+  height: 320,
+  pattern: "dither",
+});
+```
+
+For a sharp high-DPI canvas, size the backing store yourself and render through
+a scaled context:
+
+```ts
+const width = 320;
+const height = 180;
+const dpr = Math.min(window.devicePixelRatio, 2);
+
+canvas.width = width * dpr;
+canvas.height = height * dpr;
+canvas.style.width = `${width}px`;
+canvas.style.height = `${height}px`;
+
+const ctx = canvas.getContext("2d");
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+render(ctx, "brook", { width, height, pattern: "wave" });
+```
+
+### Render options
+
+| Option | Type | Default | Effect |
+| --- | --- | --- | --- |
+| `size` | `number` | `200` | Fallback for both dimensions |
+| `width` | `number` | `size` | Logical canvas width |
+| `height` | `number` | `size` | Logical canvas height |
+| `pattern` | `"dither" \| "glyph" \| "wave"` | `"dither"` | Rendering language |
+| `shape` | `"rectangle" \| "circle"` | `"rectangle"` | Full canvas or transparent circular crop |
+| `palette` | `{ background, ramp }` | `PALETTES.moss` | Background and ordered dark-to-light colors |
+| `t` | `number` | `0` | Time value used to evolve the field |
+
+`width` and `height` override `size`. Use positive logical pixel values. On
+non-square canvases ribbit preserves cell proportions and spatial frequency,
+so an OG image is extended to its aspect ratio rather than stretching a square.
+
+The lower-level `drawDither(ctx, seed, size, t?, palette?)`, `drawGlyph` and
+`drawWave` functions remain available for square contexts when dispatch
+through `render` is unnecessary.
+
+## Avatars and shapes
+
+Circular output is clipped inside the renderer. PNG and SVG corners are truly
+transparent; `border-radius: 50%` alone only changes how a rectangular image is
+displayed in CSS.
+
+```ts
+import { toBlob, toSVG } from "ribbit";
+
+const png = await toBlob("ada", {
+  preset: "avatar",
+  size: 512,
+  pattern: "glyph",
+  shape: "circle",
+});
+
+const svg = toSVG("ada", {
+  preset: "avatar",
+  size: 256,
+  pattern: "wave",
+  shape: "circle",
+});
+```
+
+With a rectangular canvas, `shape: "circle"` creates a centered disc whose
+diameter is the shorter side. For normal avatars, use equal dimensions or the
+`avatar` preset.
+
+## Open Graph images
+
+The `og` preset always renders at the recommended social-cover ratio of
+1200×630. It is a native wide composition: dither cells stay square, glyphs
+keep their proportions and waves retain their spatial frequency.
+
+```ts
+import { toBlob, toSVG } from "ribbit";
+
+const cover = await toBlob("release-1.4", {
+  preset: "og",
+  pattern: "dither",
+});
+
+const coverSvg = toSVG("release-1.4", {
+  preset: "og",
+  pattern: "wave",
+});
+```
+
+Download the generated PNG in a browser:
+
+```ts
+const url = URL.createObjectURL(cover);
+const link = document.createElement("a");
+link.href = url;
+link.download = "release-1.4-og.png";
+link.click();
+URL.revokeObjectURL(url);
+```
+
+Then reference the public image in a page head:
+
+```html
+<meta property="og:image" content="https://example.com/release-1.4-og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+```
+
+The OG preset owns its dimensions, so `size`, `width` and `height` do not alter
+1200×630. Omit `preset` and pass `width` and `height` for a custom banner.
+
+[Try avatar and OG formats in the playground](/#playground).
+
 ## Static exports
 
-Render a still to a PNG or an SVG. Both take an optional `preset`: `"og"` gives
-a 1200x630 cover, `"avatar"` gives a square.
+All export helpers accept the same seed, pattern, shape, palette and time options.
+
+| Function | Output | Environment |
+| --- | --- | --- |
+| `toDataURL(seed, options)` | PNG data URL | Browser DOM |
+| `toBlob(seed, options)` | `Promise<Blob>` containing PNG | Browser DOM |
+| `toWebM(seed, options)` | `Promise<Blob>` containing animated WebM | Browser DOM |
+| `toSVG(seed, options)` | Standalone SVG string | Browser or server |
 
 ```ts
 import { toDataURL, toBlob, toSVG } from "ribbit";
 
-const url = toDataURL("ribbit", { pattern: "glyph", size: 128 });
-const svg = toSVG("ribbit", { preset: "avatar", size: 256 });
-const png = await toBlob("ribbit", { preset: "og" }); // 1200x630 Blob
+const dataUrl = toDataURL("reed", { pattern: "glyph", size: 128 });
+const blob = await toBlob("reed", { width: 800, height: 450 });
+const markup = toSVG("reed", { preset: "og", pattern: "wave" });
 ```
 
-`toSVG` returns a standalone, dependency-free SVG string you can inline, write
-to disk, or use as an `<img>` source.
+SVG output has no external assets or runtime dependencies. It can be written
+to disk, served as an image, or inlined in HTML. Circular SVGs use a unique
+clip-path ID so multiple generated marks can safely share one document.
+
+## Animation
+
+`t: 0` is the deterministic static frame. Advance `t` in seconds to animate
+without changing the identity of the mark.
+
+```ts
+const ctx = canvas.getContext("2d");
+let started = 0;
+
+function frame(now) {
+  if (!started) started = now;
+  render(ctx, "dragonfly", {
+    size: 256,
+    pattern: "dither",
+    t: (now - started) / 1000,
+  });
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+```
+
+Pause loops when the canvas is offscreen and respect
+`prefers-reduced-motion`. The Svelte component handles both automatically.
+
+### Export animated WebM
+
+Canvas animation is the best option for a mark used directly in an app: it is
+responsive and can pause when hidden. Use `toWebM` when the animation must be a
+downloadable file or a conventional `<video>` asset.
+
+```ts
+import { PALETTES, toWebM } from "ribbit";
+
+const video = await toWebM("dragonfly", {
+  preset: "og",
+  pattern: "wave",
+  palette: PALETTES.tide,
+  duration: 5,
+  fps: 30,
+  videoBitsPerSecond: 4_000_000,
+  onProgress(progress) {
+    console.log(`${Math.round(progress * 100)}%`);
+  },
+});
+```
+
+Recording happens in real time, so a five-second export takes approximately
+five seconds. Ribbit tries VP9, then VP8, then generic WebM and reports an error
+when the browser cannot encode any of them. Pass `mimeType` to request a
+specific supported WebM codec.
+
+| WebM option | Default | Notes |
+| --- | --- | --- |
+| `duration` | `4` | Seconds, clamped between 0.25 and 60 |
+| `fps` | `30` | Capture rate, clamped between 1 and 60 |
+| `mimeType` | automatic | VP9 → VP8 → generic WebM |
+| `videoBitsPerSecond` | browser default | Encoder bitrate hint |
+| `matte` | palette background | Solid color behind transparent circular corners; `null` disables it |
+| `onProgress` | — | Receives values from 0 to 1 |
+
+Download and embed the resulting blob:
+
+```ts
+const url = URL.createObjectURL(video);
+const link = document.createElement("a");
+link.href = url;
+link.download = "dragonfly.webm";
+link.click();
+
+// Or assign the same URL to a video element.
+player.src = url;
+player.autoplay = true;
+player.muted = true;
+player.loop = true;
+player.playsInline = true;
+```
+
+WebM transparency varies by codec and browser. The default opaque `matte`
+makes files predictable; keep the live Canvas version when true animated
+transparency is required. PNG or SVG remains the fallback for reduced motion,
+social metadata and environments without video support.
 
 ## Svelte
 
-`svelte` is an optional peer dependency. The component renders one static frame
-on mount, so the mark is visible before any animation runs.
+`svelte` is an optional peer dependency. The component paints a static frame
+immediately, then starts its loop only when `animated` is enabled.
 
 ```svelte
 <script>
   import Ribbit from "ribbit/svelte";
 </script>
 
-<Ribbit seed="null-frog" size={64} pattern="dither" radius="50%" animated />
+<Ribbit
+  seed="null-frog"
+  size={96}
+  pattern="dither"
+  shape="circle"
+  radius="50%"
+  animated
+/>
 ```
 
 Props:
 
-- `seed` — any string or number. Required.
-- `size` — logical pixel size of the square mark. Default `64`.
-- `pattern` — `"dither" | "glyph" | "wave"`. Default `"dither"`.
-- `radius` — CSS border radius for the canvas. Default `"50%"`.
-- `animated` — run a `requestAnimationFrame` loop. Default `false`.
-- `class` — extra class(es) for the canvas.
+- `seed` — string or number. Required.
+- `size` — logical and displayed square size. Default `64`.
+- `pattern` — `"dither"`, `"glyph"` or `"wave"`. Default `"dither"`.
+- `shape` — `"rectangle"` or `"circle"`. Default `"rectangle"`.
+- `palette` — a built-in or custom `{ background, ramp }` palette.
+- `radius` — CSS border radius. Default `"50%"`.
+- `animated` — starts a visibility-aware animation loop. Default `false`.
+- `class` — additional classes for the canvas.
 
-When `animated` is on, the loop pauses while the canvas is offscreen and is
-forced static under `prefers-reduced-motion`. Device pixel ratio is capped at
-1.5, so a mark stays crisp without over-rendering.
+Device pixel ratio is capped at 1.5 in the wrapper to keep a grid of marks
+crisp without excessive rendering cost.
 
 ## Palette
 
-The palette is exported for when you want the marks to sit in a wider system.
+Every renderer and export helper accepts a palette. Four ready-made systems are
+included; `moss` remains the default for backward compatibility.
+
+| Name | Direction |
+| --- | --- |
+| `moss` | The original green-black identity |
+| `tide` | Deep blue through cool cyan |
+| `ember` | Dark brown through warm amber |
+| `mono` | Neutral black through soft white |
+
+```ts
+import { PALETTES, render, toSVG } from "ribbit";
+
+render(canvas, "night-swim", {
+  pattern: "wave",
+  palette: PALETTES.tide,
+});
+
+const cover = toSVG("launch", {
+  preset: "og",
+  palette: PALETTES.ember,
+});
+```
+
+Define a custom palette with a background and an ordered dark-to-light ramp.
+The ramp must contain at least two colors; five or six usually gives the field
+the best tonal depth.
+
+```ts
+import { type Palette, toSVG } from "ribbit";
+
+const orchid: Palette = {
+  background: "#100b18",
+  ramp: [
+    "#1e1230",
+    "#382052",
+    "#60377d",
+    "#985bb0",
+    "#d796e2",
+    "#f4d5f5",
+  ],
+};
+
+const avatar = toSVG("violet", {
+  preset: "avatar",
+  shape: "circle",
+  pattern: "glyph",
+  palette: orchid,
+});
+```
+
+Palette colors do not change geometry. The same seed and pattern keep their
+composition while the output colors change. Use trusted CSS/SVG color strings
+such as hex, `rgb()` or `hsl()` values.
+
+The original colors remain available as standalone compatibility exports:
 
 ```ts
 import { RAMP, BG } from "ribbit";
-// RAMP: six greens, dark to light. BG: the ink behind the field.
+
+console.log(BG);    // #0a0d0b
+console.log(RAMP);  // six greens, dark to light
 ```
+
+## API summary
+
+- `seedFromString(value)` hashes a string to an unsigned 32-bit seed.
+- `toSeed(value)` normalizes a string or number.
+- `render(target, seed, options?)` paints a canvas or 2D context.
+- `drawDither`, `drawGlyph`, `drawWave` paint square contexts directly.
+- `toDataURL`, `toBlob` export PNG in a browser.
+- `toWebM` records an animated WebM in real time in a browser.
+- `toSVG` returns standalone SVG in browser or server environments.
+- `PALETTES` contains `moss`, `tide`, `ember` and `mono`.
+- `RAMP` and `BG` expose the original moss colors.
