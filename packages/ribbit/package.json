@@ -17,6 +17,7 @@
 		"deterministic",
 		"art",
 		"avatar",
+		"react",
 		"svelte"
 	],
 	"sideEffects": false,
@@ -37,6 +38,11 @@
 			"types": "./svelte/index.d.ts",
 			"svelte": "./svelte/Ribbit.svelte",
 			"default": "./svelte/Ribbit.svelte"
+		},
+		"./react": {
+			"types": "./dist/react/index.d.ts",
+			"import": "./dist/react/index.js",
+			"default": "./dist/react/index.js"
 		}
 	},
 	"scripts": {
@@ -46,15 +52,21 @@
 		"format": "biome check --write ."
 	},
 	"peerDependencies": {
+		"react": ">=18",
 		"svelte": "^5.0.0"
 	},
 	"peerDependenciesMeta": {
+		"react": {
+			"optional": true
+		},
 		"svelte": {
 			"optional": true
 		}
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.4",
+		"@types/react": "^19.2.14",
+		"react": "^19.2.4",
 		"svelte": "^5.56.5",
 		"typescript": "^6.0.3"
 	}
