@@ -58,16 +58,33 @@ const webm = await toWebM("ribbit", {
 `options`: `{ size?, width?, height?, pattern?, shape?, palette?, t? }`.
 Export helpers also take `preset?: "og" | "avatar"`; OG is always 1200x630.
 
-## Svelte
+## Framework adapters
+
+The renderer is framework-agnostic. The optional adapters make the common
+avatar case a one-line component; `radius` controls display clipping, while
+the core's `shape: "circle"` is reserved for exports with transparent corners.
+
+### React
+
+`react >= 18` is an optional peer dependency.
+
+```tsx
+import { RibbitAvatar } from "ribbit/react";
+
+<RibbitAvatar seed={user.id} size={40} />
+<RibbitAvatar seed="null-frog" size={96} radius={16} pattern="wave" />
+```
+
+### Svelte
 
 `svelte` is an optional peer dependency.
 
 ```svelte
 <script>
-  import Ribbit from "ribbit/svelte";
+  import RibbitAvatar from "ribbit/svelte";
 </script>
 
-<Ribbit seed="null-frog" size={64} pattern="dither" shape="circle" radius="50%" animated />
+<RibbitAvatar seed="null-frog" size={64} pattern="dither" animated />
 ```
 
 Renders one static frame on mount, so the mark is always visible. `animated`
