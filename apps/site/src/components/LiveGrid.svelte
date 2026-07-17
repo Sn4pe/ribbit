@@ -171,12 +171,13 @@ function mark(node: HTMLCanvasElement, tile: Tile) {
 					<button type="button" class="text-xl leading-none text-faint transition-colors hover:text-fg" onclick={close} aria-label="Close component example">×</button>
 				</div>
 				<p class="mt-4 text-sm leading-relaxed text-muted">Use this deterministic mark directly as an avatar component.</p>
-				<div class="mt-5 flex gap-2" role="tablist" aria-label="Component framework">
-					<button type="button" class="rounded-full border px-3 py-1 text-xs transition-colors {framework === 'react' ? 'border-brand text-brand-bright' : 'border-line text-faint hover:text-fg'}" onclick={() => (framework = "react")}>React</button>
-					<button type="button" class="rounded-full border px-3 py-1 text-xs transition-colors {framework === 'svelte' ? 'border-brand text-brand-bright' : 'border-line text-faint hover:text-fg'}" onclick={() => (framework = "svelte")}>Svelte</button>
+				<div class="install-tabs">
+					<div class="install-tabs__list" role="tablist" aria-label="Component framework">
+						<button type="button" role="tab" aria-selected={framework === "react"} class:active={framework === "react"} onclick={() => (framework = "react")}>React</button>
+						<button type="button" role="tab" aria-selected={framework === "svelte"} class:active={framework === "svelte"} onclick={() => (framework = "svelte")}>Svelte</button>
+					</div>
+					<pre class="code-block"><code>{snippet}</code><button type="button" class="install-tabs__copy" onclick={copySnippet}>{copied ? "Copied" : "Copy"}</button></pre>
 				</div>
-				<pre class="mono mt-3 overflow-x-auto rounded-card border border-line bg-bg p-4 text-xs leading-relaxed text-muted"><code>{snippet}</code></pre>
-				<button type="button" class="mt-3 rounded-card border border-line px-3 py-2 text-xs text-muted transition-colors hover:border-line-strong hover:text-fg" onclick={copySnippet}>{copied ? "Copied" : "Copy component"}</button>
 			</div>
 		</div>
 	</dialog>
