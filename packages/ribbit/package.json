@@ -1,14 +1,21 @@
 {
-	"name": "ribbit",
-	"version": "0.1.0",
+	"name": "ribbit-canvas",
+	"version": "1.0.0",
 	"description": "Turn any seed into deterministic generative art on a canvas. Zero dependencies.",
 	"type": "module",
 	"license": "MIT",
-	"author": "Null-Frog",
-	"homepage": "https://ribbit.nullfrog.dev",
+	"author": {
+		"name": "David Fadón",
+		"email": "dev@sn4pe.com",
+		"url": "https://github.com/Sn4pe"
+	},
+	"homepage": "https://ribbit.sn4pe.com",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/null-frog/ribbit"
+		"url": "https://github.com/Sn4pe/ribbit"
+	},
+	"bugs": {
+		"url": "https://github.com/Sn4pe/ribbit/issues"
 	},
 	"keywords": [
 		"generative",

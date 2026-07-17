@@ -18,7 +18,7 @@
         "@fontsource-variable/geist": "^5.2.9",
         "@fontsource-variable/geist-mono": "^5.2.6",
         "astro": "^7.0.9",
-        "ribbit": "workspace:*",
+        "ribbit-canvas": "workspace:*",
         "svelte": "^5.56.5",
       },
       "devDependencies": {
@@ -30,8 +30,8 @@
       },
     },
     "packages/ribbit": {
-      "name": "ribbit",
-      "version": "0.1.0",
+      "name": "ribbit-canvas",
+      "version": "1.0.0",
       "devDependencies": {
         "@biomejs/biome": "^2.5.4",
         "@types/react": "^19.2.14",
@@ -930,7 +930,7 @@
 
     "retext-stringify": ["retext-stringify@4.0.0", "", { "dependencies": { "@types/nlcst": "^2.0.0", "nlcst-to-string": "^4.0.0", "unified": "^11.0.0" } }, "sha512-rtfN/0o8kL1e+78+uxPTqu1Klt0yPzKuQ2BfWwwfgIUSayyzxpM1PJzkKt4V8803uB9qSy32MvI7Xep9khTpiA=="],
 
-    "ribbit": ["ribbit@workspace:packages/ribbit"],
+    "ribbit-canvas": ["ribbit-canvas@workspace:packages/ribbit"],
 
     "ribbit-site": ["ribbit-site@workspace:apps/site"],
 

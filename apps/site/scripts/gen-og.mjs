@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { toSVG } from "ribbit";
+import { toSVG } from "ribbit-canvas";
 
 const field = toSVG("null-frog", { preset: "og", pattern: "wave" });
 const title = "<title>Ribbit deterministic generative mark</title>";

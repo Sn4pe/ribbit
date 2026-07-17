@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-	site: "https://ribbit.nullfrog.dev",
+	site: "https://ribbit.sn4pe.com",
 	integrations: [mdx(), sitemap(), svelte()],
 	vite: {
 		plugins: [tailwindcss()],

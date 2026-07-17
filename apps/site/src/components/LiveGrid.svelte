@@ -1,5 +1,5 @@
 <script lang="ts">
-import { PALETTES, type Pattern, render, toSeed } from "ribbit";
+import { PALETTES, type Pattern, render, toSeed } from "ribbit-canvas";
 import { tick } from "svelte";
 
 interface Tile {
@@ -48,13 +48,13 @@ let dialog: HTMLDialogElement;
 let snippet = $derived(
 	selected
 		? framework === "react"
-			? `import { RibbitAvatar } from "ribbit/react";
+			? `import { RibbitAvatar } from "ribbit-canvas/react";
 
 export function Avatar() {
   return <RibbitAvatar seed="${selected.seed}" pattern="${selected.pattern}" size={96} />;
 }`
 			: `<script>
-  import RibbitAvatar from "ribbit/svelte";
+  import RibbitAvatar from "ribbit-canvas/svelte";
 <${"/"}script>
 
 <RibbitAvatar seed="${selected.seed}" pattern="${selected.pattern}" size={96} />`

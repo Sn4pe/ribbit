@@ -5,7 +5,7 @@ description: Install deterministic avatars for React or Svelte, then use the fra
 ---
 
 import InstallTabs from "../components/InstallTabs.svelte";
-import Ribbit from "ribbit/svelte";
+import Ribbit from "ribbit-canvas/svelte";
 
 Ribbit turns a string or number into the same generative mark every time. Use
 the component for an avatar, or use the core to paint Canvas, generate SVG and
@@ -26,7 +26,7 @@ identifier.
 ### React
 
 ```tsx
-import { RibbitAvatar } from "ribbit/react";
+import { RibbitAvatar } from "ribbit-canvas/react";
 
 export function Avatar({ user }) {
   return <RibbitAvatar seed={user.id} size={40} />;
@@ -39,7 +39,7 @@ The default export has the same avatar defaults.
 
 ```svelte
 <script>
-  import RibbitAvatar from "ribbit/svelte";
+  import RibbitAvatar from "ribbit-canvas/svelte";
 </script>
 
 <RibbitAvatar seed={user.id} size={40} />
@@ -51,7 +51,7 @@ Use the core directly when the mark belongs in a canvas composition rather
 than a component.
 
 ```ts
-import { render } from "ribbit";
+import { render } from "ribbit-canvas";
 
 render(canvas, "null-frog", { size: 256, pattern: "dither" });
 ```
@@ -127,7 +127,7 @@ The renderer accepts an `HTMLCanvasElement`, an `OffscreenCanvas`, or either
 preserves your transform.
 
 ```ts
-import { render } from "ribbit";
+import { render } from "ribbit-canvas";
 
 const width = 320;
 const height = 180;
@@ -151,7 +151,7 @@ frequencies stay proportional instead of stretching.
 All export helpers share `seed`, `pattern`, `shape`, `palette` and `t`.
 
 ```ts
-import { toBlob, toSVG } from "ribbit";
+import { toBlob, toSVG } from "ribbit-canvas";
 
 const avatar = await toBlob("ada", {
   preset: "avatar",
@@ -187,7 +187,7 @@ render(ctx, "dragonfly", {
 Use `toWebM` when an animation must leave the browser as a file.
 
 ```ts
-import { PALETTES, toWebM } from "ribbit";
+import { PALETTES, toWebM } from "ribbit-canvas";
 
 const video = await toWebM("dragonfly", {
   preset: "og",
@@ -207,7 +207,7 @@ Every renderer accepts a palette with a background and a dark-to-light ramp.
 Ribbit ships four palettes: `moss`, `tide`, `ember` and `mono`.
 
 ```ts
-import { PALETTES, toSVG } from "ribbit";
+import { PALETTES, toSVG } from "ribbit-canvas";
 
 const cover = toSVG("launch", {
   preset: "og",

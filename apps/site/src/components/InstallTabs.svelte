@@ -1,9 +1,9 @@
 <script lang="ts">
 const packageManagers = [
-	{ id: "bun", label: "Bun", command: "bun add ribbit" },
-	{ id: "npm", label: "npm", command: "npm install ribbit" },
-	{ id: "pnpm", label: "pnpm", command: "pnpm add ribbit" },
-	{ id: "yarn", label: "Yarn", command: "yarn add ribbit" },
+	{ id: "bun", label: "Bun", command: "bun add ribbit-canvas" },
+	{ id: "npm", label: "npm", command: "npm install ribbit-canvas" },
+	{ id: "pnpm", label: "pnpm", command: "pnpm add ribbit-canvas" },
+	{ id: "yarn", label: "Yarn", command: "yarn add ribbit-canvas" },
 ] as const;
 
 type PackageManager = (typeof packageManagers)[number];

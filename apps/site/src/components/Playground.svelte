@@ -9,7 +9,7 @@ import {
 	toBlob,
 	toSeed,
 	toWebM,
-} from "ribbit";
+} from "ribbit-canvas";
 
 const PATTERNS: Pattern[] = ["dither", "glyph", "wave"];
 const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
