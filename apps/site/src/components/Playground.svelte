@@ -42,7 +42,6 @@ let exportError = $state("");
 let canvas: HTMLCanvasElement;
 
 $effect(() => {
-	// Deps: seed, pattern, paletteName, size, format, shape, animated.
 	const s = toSeed(seed || " ");
 	const pat = pattern;
 	const colors = PALETTES[paletteName];
@@ -138,6 +137,11 @@ async function exportWebm() {
 	}
 }
 
+async function exportCurrent() {
+	if (animated) await exportWebm();
+	else await exportPng();
+}
+
 function download(blob: Blob, extension: "png" | "webm") {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
@@ -151,7 +155,6 @@ function download(blob: Blob, extension: "png" | "webm") {
 </script>
 
 <div class="grid gap-6 rounded-card border border-line bg-surface/60 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
-	<!-- Preview -->
 	<div class="flex min-h-80 items-center justify-center rounded-card border border-line bg-[#080b09] p-6">
 		<canvas
 			bind:this={canvas}
@@ -166,7 +169,6 @@ function download(blob: Blob, extension: "png" | "webm") {
 		></canvas>
 	</div>
 
-	<!-- Controls -->
 	<div class="flex flex-col gap-6">
 		<label class="block">
 			<span class="mono text-xs uppercase tracking-wider text-faint">seed</span>
@@ -292,10 +294,11 @@ function download(blob: Blob, extension: "png" | "webm") {
 				role="switch"
 				aria-checked={animated}
 				aria-label="Animate the field"
-				class="relative h-6 w-11 rounded-full border border-line-strong transition-colors"
+				class="relative h-6 w-11 rounded-full border border-line-strong transition-colors disabled:opacity-50"
 				class:bg-brand-dim={animated}
 				class:bg-bg={!animated}
 				onclick={() => (animated = !animated)}
+				disabled={busy !== null}
 			>
 				<span
 					class="absolute top-0.5 h-4 w-4 rounded-full bg-fg transition-all"
@@ -305,19 +308,19 @@ function download(blob: Blob, extension: "png" | "webm") {
 			</button>
 		</div>
 
-		<div class="mt-1 grid grid-cols-2 gap-2">
+		<div class="mt-1">
 			<button
 				type="button"
-				class="mono rounded-card border border-brand-dim bg-brand-dim/20 px-3 py-2.5 text-xs text-brand-bright transition-colors hover:bg-brand-dim/35 disabled:opacity-50"
-				onclick={exportPng}
+				class="mono w-full rounded-card border border-brand-dim bg-brand-dim/20 px-3 py-2.5 text-xs text-brand-bright transition-colors hover:bg-brand-dim/35 disabled:opacity-50"
+				onclick={exportCurrent}
 				disabled={busy !== null}
-			>{busy === "png" ? "exporting..." : "export PNG"}</button>
-			<button
-				type="button"
-				class="mono rounded-card border border-line-strong bg-surface-2 px-3 py-2.5 text-xs text-fg transition-colors hover:border-brand-dim disabled:opacity-50"
-				onclick={exportWebm}
-				disabled={busy !== null}
-			>{busy === "webm" ? `recording ${Math.round(progress * 100)}%` : "export WebM · 5s"}</button>
+			>{animated
+				? busy === "webm"
+					? `recording ${Math.round(progress * 100)}%`
+					: "export WebM · 5s"
+				: busy === "png"
+					? "exporting..."
+					: "export PNG"}</button>
 		</div>
 		{#if exportError}
 			<p class="mono -mt-3 text-xs text-[#d98b78]" role="alert">{exportError}</p>
