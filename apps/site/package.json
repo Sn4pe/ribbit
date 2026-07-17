@@ -7,6 +7,8 @@
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
+		"gen:favicon": "bun run scripts/gen-favicon.mjs",
+		"gen:og": "bun run scripts/gen-og.mjs",
 		"preview": "astro preview",
 		"check": "biome check .",
 		"check:types": "astro check",
