@@ -29,5 +29,3 @@ bun run build        # static production build
 - Svelte 5 for selectively hydrated islands
 - Biome and GitHub Actions CI
 
-Generated from [frogspawn-astro](https://github.com/Null-Frog/frogspawn-astro). Update with `copier update`.
-

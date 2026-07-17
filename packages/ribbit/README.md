@@ -1,17 +1,22 @@
 # ribbit
 
+[![npm version](https://img.shields.io/npm/v/ribbit-canvas.svg)](https://www.npmjs.com/package/ribbit-canvas)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![zero deps](https://img.shields.io/badge/dependencies-zero-blue.svg)](https://github.com/Sn4pe/ribbit)
+[![GitHub stars](https://img.shields.io/github/stars/Sn4pe/ribbit.svg?style=flat)](https://github.com/Sn4pe/ribbit/stargazers)
+
 Turn any seed into deterministic generative art on a canvas. One string in, the
 same mark out, every time. Framework-agnostic core, zero runtime dependencies,
 tiny.
 
 ```sh
-bun add ribbit
+bun add ribbit-canvas
 ```
 
 ## Core
 
 ```ts
-import { PALETTES, render, toBlob, toSVG, toWebM } from "ribbit";
+import { PALETTES, render, toBlob, toSVG, toWebM } from "ribbit-canvas";
 
 // Paint onto a canvas element (or an existing 2D context).
 render(canvas, "null-frog", { size: 256, pattern: "wave" });
@@ -69,7 +74,7 @@ the core's `shape: "circle"` is reserved for exports with transparent corners.
 `react >= 18` is an optional peer dependency.
 
 ```tsx
-import { RibbitAvatar } from "ribbit/react";
+import { RibbitAvatar } from "ribbit-canvas/react";
 
 <RibbitAvatar seed={user.id} size={40} />
 <RibbitAvatar seed="null-frog" size={96} radius={16} pattern="wave" />
@@ -81,7 +86,7 @@ import { RibbitAvatar } from "ribbit/react";
 
 ```svelte
 <script>
-  import RibbitAvatar from "ribbit/svelte";
+  import RibbitAvatar from "ribbit-canvas/svelte";
 </script>
 
 <RibbitAvatar seed="null-frog" size={64} pattern="dither" animated />
@@ -90,7 +95,3 @@ import { RibbitAvatar } from "ribbit/react";
 Renders one static frame on mount, so the mark is always visible. `animated`
 runs a `requestAnimationFrame` loop that is paused when offscreen and forced
 static under `prefers-reduced-motion`. Device pixel ratio is capped at 1.5.
-
-## License
-
-MIT (c) Null-Frog
