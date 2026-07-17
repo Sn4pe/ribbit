@@ -19,6 +19,47 @@ export interface Palette {
 	ramp: readonly string[];
 }
 
+/**
+ * The Canvas 2D features ribbit needs to paint a mark.
+ *
+ * This is structural on purpose: both browser and Offscreen Canvas contexts
+ * satisfy it, and framework adapters do not need to leak DOM-specific types.
+ */
+export interface Canvas2DContext {
+	fillStyle: string | CanvasGradient | CanvasPattern;
+	font: string;
+	textAlign: CanvasTextAlign;
+	globalCompositeOperation: GlobalCompositeOperation;
+	fillRect(x: number, y: number, width: number, height: number): void;
+	clearRect(x: number, y: number, width: number, height: number): void;
+	fillText(text: string, x: number, y: number): void;
+	beginPath(): void;
+	moveTo(x: number, y: number): void;
+	lineTo(x: number, y: number): void;
+	arc(
+		x: number,
+		y: number,
+		radius: number,
+		startAngle: number,
+		endAngle: number,
+	): void;
+	clip(): void;
+	closePath(): void;
+	fill(): void;
+	save(): void;
+	restore(): void;
+}
+
+/** A Canvas-like surface that can provide a 2D drawing context. */
+export interface CanvasSurface {
+	width: number;
+	height: number;
+	getContext(contextId: "2d"): Canvas2DContext | null;
+}
+
+/** A Canvas-like surface or a 2D context, including their Offscreen variants. */
+export type RenderTarget = CanvasSurface | Canvas2DContext;
+
 export interface RenderOptions {
 	/** Logical fallback size. Used for both dimensions unless overridden. Default 200. */
 	size?: number;
@@ -266,8 +307,8 @@ function wedge(l: WaveLayer, x: number, t: number): number {
 	return l.base + (s / w) * l.amp;
 }
 
-/** Any 2D drawing surface: a browser Canvas 2D context or an SVG string sink. */
-type Ctx = CanvasRenderingContext2D;
+/** The structural Canvas 2D context used by every raster painter. */
+type Ctx = Canvas2DContext;
 
 interface Grid {
 	cols: number;
@@ -462,11 +503,8 @@ export function drawWave(
 	paintWave(ctx, seed, size, size, t, resolvePalette(palette));
 }
 
-function is2dContext(target: unknown): target is CanvasRenderingContext2D {
-	return (
-		typeof CanvasRenderingContext2D !== "undefined" &&
-		target instanceof CanvasRenderingContext2D
-	);
+function is2dContext(target: RenderTarget): target is Canvas2DContext {
+	return "fillRect" in target;
 }
 
 /**
@@ -476,21 +514,20 @@ function is2dContext(target: unknown): target is CanvasRenderingContext2D {
  * callers can pre-scale for device pixel ratio.
  */
 export function render(
-	target: HTMLCanvasElement | CanvasRenderingContext2D,
+	target: RenderTarget,
 	seed: string | number,
 	options: RenderOptions = {},
 ): void {
 	const { size = 200, pattern = "dither", t = 0 } = options;
 	const width = options.width ?? size;
 	const height = options.height ?? size;
-	let ctx: CanvasRenderingContext2D;
+	let ctx: Canvas2DContext;
 	if (is2dContext(target)) {
 		ctx = target;
 	} else {
-		const canvas = target as HTMLCanvasElement;
-		canvas.width = width;
-		canvas.height = height;
-		const c = canvas.getContext("2d");
+		target.width = width;
+		target.height = height;
+		const c = target.getContext("2d");
 		if (!c) throw new Error("ribbit: could not get a 2D context");
 		ctx = c;
 	}
