@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
 	BG,
+	type Canvas2DContext,
 	PALETTES,
 	type Pattern,
 	RAMP,
+	render,
 	seedFromString,
 	toSeed,
 	toSVG,
@@ -33,6 +35,43 @@ describe("seed hashing", () => {
 		expect(toSeed(42)).toBe(42);
 		expect(toSeed(-1)).toBe(4294967295);
 		expect(toSeed("7")).toBe(seedFromString("7"));
+	});
+});
+
+describe("framework-agnostic canvas targets", () => {
+	test("renders into a structural 2D context without DOM constructors", () => {
+		const fills: string[] = [];
+		const context = {
+			fillStyle: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			fillRect() {
+				fills.push(this.fillStyle);
+			},
+		} as unknown as Canvas2DContext;
+
+		render(context, "offscreen-compatible", { size: 24 });
+		expect(fills.length).toBeGreaterThan(1);
+	});
+
+	test("sets dimensions on a structural Canvas-like surface", () => {
+		const context = {
+			fillStyle: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			fillRect() {},
+		} as unknown as Canvas2DContext;
+		const surface = {
+			width: 0,
+			height: 0,
+			getContext: () => context,
+		};
+
+		render(surface, "surface", { width: 96, height: 48 });
+		expect(surface.width).toBe(96);
+		expect(surface.height).toBe(48);
 	});
 });
 
