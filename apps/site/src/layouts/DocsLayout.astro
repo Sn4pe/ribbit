@@ -8,15 +8,83 @@ interface Props {
 const { frontmatter } = Astro.props;
 const title = frontmatter?.title ?? "Docs";
 const description = frontmatter?.description;
+const navigation = [
+	{
+		label: "Getting started",
+		items: [
+			{ href: "#overview", label: "Overview" },
+			{ href: "#installation", label: "Installation" },
+		],
+	},
+	{
+		label: "Component adapters",
+		items: [
+			{ href: "#components", label: "Components" },
+			{ href: "#props", label: "Props" },
+			{ href: "#sizes-and-shapes", label: "Sizes & shapes" },
+			{ href: "#patterns", label: "Patterns" },
+		],
+	},
+	{
+		label: "Core engine",
+		items: [
+			{ href: "#core-renderer", label: "Core renderer" },
+			{ href: "#engine-helpers", label: "Engine helpers" },
+			{ href: "#exports", label: "Exports" },
+			{ href: "#animation", label: "Animation" },
+			{ href: "#palettes", label: "Palettes" },
+			{ href: "#api-reference", label: "API reference" },
+		],
+	},
+	{ label: "Legal", items: [{ href: "#license", label: "License" }] },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-	<section class="mx-auto max-w-3xl px-5 py-16 lg:px-8">
-		<p class="mono text-sm text-brand">the manual</p>
-		<h1 class="mt-2 text-4xl font-semibold tracking-tight text-fg sm:text-5xl">{title}</h1>
-		{description && <p class="mt-4 text-lg text-muted">{description}</p>}
-		<article class="prose mt-10">
-			<slot />
-		</article>
+	<section class="mx-auto grid max-w-6xl gap-12 px-5 py-16 lg:grid-cols-[11rem_minmax(0,44rem)] lg:gap-16 lg:px-8">
+		<aside class="hidden lg:block">
+			<nav class="sticky top-24" aria-label="Documentation sections">
+				<div class="space-y-6">
+					{navigation.map((section) => (
+						<section>
+							<p class="mono mb-2 text-[10px] uppercase tracking-widest text-faint">{section.label}</p>
+							<ul class="m-0 list-none space-y-2 p-0 text-sm">
+								{section.items.map((item) => (
+									<li><a class="text-faint transition-colors hover:text-fg" href={item.href}>{item.label}</a></li>
+								))}
+							</ul>
+						</section>
+					))}
+				</div>
+			</nav>
+		</aside>
+		<div>
+			<header id="overview" class="scroll-mt-24">
+				<p class="mono text-sm text-brand">the manual</p>
+				<h1 class="mt-2 text-4xl font-semibold tracking-tight text-fg sm:text-5xl">{title}</h1>
+				{description && <p class="mt-4 text-lg text-muted">{description}</p>}
+			</header>
+			<article class="prose mt-10">
+				<slot />
+			</article>
+		</div>
 	</section>
 </BaseLayout>
+
+<script>
+	for (const pre of document.querySelectorAll<HTMLElement>(".prose pre")) {
+		if (pre.dataset.copyReady !== undefined) continue;
+		const code = pre.querySelector("code");
+		if (!code) continue;
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "code-copy";
+		button.textContent = "Copy";
+		button.addEventListener("click", async () => {
+			await navigator.clipboard.writeText(code.textContent ?? "");
+			button.textContent = "Copied";
+			setTimeout(() => (button.textContent = "Copy"), 1500);
+		});
+		pre.append(button);
+	}
+</script>

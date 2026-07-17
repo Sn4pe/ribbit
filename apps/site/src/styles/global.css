@@ -2,13 +2,6 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
-/*
-  ribbit - one world: a night pond rendered as a generative field.
-  Green-black tonal base (matches the engine's own BG), no graph-paper grid,
-  no accent splashes. The signature is the generative art itself, so the type
-  stays quiet and the color stays tonal. Dark only, on purpose.
-*/
-
 :root {
 	--bg: #0a0d0b;
 	--surface: #0f140f;
@@ -59,7 +52,6 @@
 		-webkit-font-smoothing: antialiased;
 	}
 
-	/* Premium grain: a fine, static film on the substrate, behind everything. */
 	body::before {
 		content: "";
 		position: fixed;
@@ -82,17 +74,16 @@
 	}
 }
 
-/* A quiet inline-code / seed treatment: mono, only where content is data. */
 .mono {
 	font-family: var(--font-mono);
 	font-feature-settings: "ss01";
 }
 
-/* Docs prose. Code blocks are Shiki-highlighted; wrap them in a real panel. */
 .prose {
 	max-width: 44rem;
 }
 .prose h2 {
+	scroll-margin-top: 6rem;
 	margin-top: 3rem;
 	margin-bottom: 0.75rem;
 	font-size: 1.5rem;
@@ -101,6 +92,7 @@
 	color: var(--fg);
 }
 .prose h3 {
+	scroll-margin-top: 6rem;
 	margin-top: 2rem;
 	margin-bottom: 0.5rem;
 	font-size: 1.05rem;
@@ -171,8 +163,9 @@
 	border-radius: 4px;
 }
 .prose pre {
+	position: relative;
 	margin-top: 1.25rem;
-	padding: 1.1rem 1.25rem;
+	padding: 1.1rem 4.75rem 1.1rem 1.25rem;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
 	background: #080b09 !important;
@@ -182,4 +175,55 @@
 }
 .prose pre code {
 	font-family: var(--font-mono);
+}
+.code-copy,
+.install-tabs__copy {
+	position: absolute;
+	top: 0.65rem;
+	right: 0.65rem;
+	border: 1px solid var(--line);
+	border-radius: 0.3rem;
+	padding: 0.3rem 0.5rem;
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	color: var(--faint);
+	transition:
+		color 150ms ease,
+		border-color 150ms ease;
+}
+.code-copy:hover,
+.install-tabs__copy:hover {
+	border-color: var(--line-strong);
+	color: var(--brand-bright);
+}
+.install-tabs {
+	margin-top: 1.25rem;
+}
+.install-tabs__list {
+	display: flex;
+	gap: 0.25rem;
+	margin-bottom: -1px;
+	padding-left: 0.5rem;
+}
+.install-tabs__list button {
+	border: 1px solid transparent;
+	border-bottom: 0;
+	border-radius: 0.35rem 0.35rem 0 0;
+	padding: 0.45rem 0.7rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--faint);
+}
+.install-tabs__list button:hover {
+	color: var(--fg);
+}
+.install-tabs__list button.active {
+	border-color: var(--line);
+	background: #080b09;
+	color: var(--brand-bright);
+}
+.install-tabs pre {
+	position: relative;
+	margin-top: 0;
+	padding-right: 4.75rem;
 }
