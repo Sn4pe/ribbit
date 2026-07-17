@@ -1,14 +1,9 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import Ribbit from "ribbit/svelte";
 import LiveGrid from "../components/LiveGrid.svelte";
 import Playground from "../components/Playground.svelte";
-import Ribbit from "ribbit/svelte";
+import BaseLayout from "../layouts/BaseLayout.astro";
 
-// Tagline options (no em dashes, no semicolons):
-//   1. One seed in, the same mark out, every single time.
-//   2. Deterministic generative marks for anything you can name.
-
-// Curated specimen strip for the hero. Varied seeds and patterns.
 const strip = [
 	{ seed: "null-frog", pattern: "wave" },
 	{ seed: "ribbit", pattern: "dither" },
@@ -40,12 +35,68 @@ const patterns = [
 		note: "Seven stacked wave layers, dark to light. Soft horizons over the pond.",
 	},
 ] as const;
+
+const description =
+	"Deterministic generative avatars, Canvas marks, SVG, PNG and WebM from any seed. Zero dependencies and no network requests.";
+
+const faqs = [
+	{
+		question: "Is Ribbit free to use?",
+		answer:
+			"Yes. Ribbit is open source under the MIT license and can be used in personal and commercial projects.",
+	},
+	{
+		question: "How does a seed become a stable avatar?",
+		answer:
+			"Ribbit hashes a string or number into a deterministic seed. The same seed, options and package version render the same mark every time.",
+	},
+	{
+		question: "Does Ribbit make network requests?",
+		answer:
+			"No. Marks render locally in Canvas or SVG. There is no image API, upload pipeline or remote asset to fetch.",
+	},
+	{
+		question: "Does Ribbit work with React and Svelte?",
+		answer:
+			"Yes. Ribbit ships compact avatar adapters for React 18+ and Svelte 5, plus a framework-agnostic Canvas engine.",
+	},
+	{
+		question: "Can I generate images without a browser UI?",
+		answer:
+			"Yes. toSVG returns a standalone SVG on the server or in the browser. PNG and WebM helpers need browser Canvas APIs.",
+	},
+] as const;
+
+const faqColumns = [
+	faqs.filter((_, index) => index % 2 === 0),
+	faqs.filter((_, index) => index % 2 === 1),
+];
+
+const structuredData = [
+	{
+		"@context": "https://schema.org",
+		"@type": "SoftwareApplication",
+		name: "Ribbit",
+		applicationCategory: "DeveloperApplication",
+		operatingSystem: "Web",
+		isAccessibleForFree: true,
+		description,
+		license: "https://opensource.org/license/mit",
+	},
+	{
+		"@context": "https://schema.org",
+		"@type": "FAQPage",
+		mainEntity: faqs.map((faq) => ({
+			"@type": "Question",
+			name: faq.question,
+			acceptedAnswer: { "@type": "Answer", text: faq.answer },
+		})),
+	},
+];
 ---
 
-<BaseLayout>
-	<!-- HERO: the signature is the live field of marks. It owns the fold. -->
+<BaseLayout description={description} structuredData={structuredData}>
 	<section class="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden">
-		<!-- Specimen strip, full-bleed, alive. Static under reduced-motion. -->
 		<div class="pointer-events-none relative -mt-4 mb-14 flex gap-4 overflow-hidden px-5 lg:px-8 [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent)]">
 			{
 				strip.map((m) => (
@@ -61,7 +112,7 @@ const patterns = [
 				ribbit<span class="text-brand">.</span>
 			</h1>
 			<p class="mt-7 max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
-				One seed in, the same mark out, every single time. A tiny, zero-dependency engine that turns any string or number into deterministic generative art.
+				Deterministic generative avatars and Canvas marks from any seed. A tiny, zero-dependency engine with no stored images and no network requests.
 			</p>
 
 			<div class="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -93,7 +144,6 @@ const patterns = [
 		</div>
 	</section>
 
-	<!-- THREE FIELDS: specimen-driven, no icon tiles, no feature cards. -->
 	<section class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
 		<h2 class="max-w-2xl text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Three ways to read the same field.</h2>
 		<p class="mono mt-3 max-w-2xl text-sm text-muted">Every pattern samples one seeded value field. Switch the lens, keep the seed.</p>
@@ -113,12 +163,11 @@ const patterns = [
 		</div>
 	</section>
 
-	<!-- LIVE GRID: infinite scroll of deterministic marks. -->
 	<section id="grid" class="border-t border-line bg-surface/30">
 		<div class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<h2 class="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">A field with no edges.</h2>
-				<p class="mono max-w-md text-sm text-muted">Keep scrolling. New seeds generate as you go, each hover brings one mark to life.</p>
+				<p class="mono max-w-md text-sm text-muted">A small collection of stable seeds. Hover any mark to bring it to life.</p>
 			</div>
 			<div class="mt-10">
 				<LiveGrid client:visible />
@@ -126,8 +175,7 @@ const patterns = [
 		</div>
 	</section>
 
-	<!-- PLAYGROUND -->
-	<section id="playground" class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+	<section id="playground" class="scroll-mt-20 mx-auto max-w-6xl px-5 py-20 lg:px-8">
 		<div class="flex flex-wrap items-end justify-between gap-4">
 			<h2 class="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Tune one, take it with you.</h2>
 			<p class="mono max-w-md text-sm text-muted">Change the seed, pattern, palette and format, then export a circular avatar or a 1200×630 OG image.</p>
@@ -136,9 +184,45 @@ const patterns = [
 			<Playground client:load />
 		</div>
 	</section>
+
+	<section id="faq" class="border-t border-line bg-surface/30">
+		<div class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+			<div class="max-w-2xl">
+				<h2 class="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Frequently asked questions</h2>
+				<p class="mt-3 text-sm leading-relaxed text-muted">Everything needed to use Ribbit as a deterministic avatar generator or a generative media engine.</p>
+			</div>
+			<div class="mt-10 grid items-start gap-3 lg:grid-cols-2">
+				{faqColumns.map((column) => (
+					<div class="space-y-3">
+						{column.map((faq) => (
+							<details class="group rounded-card border border-line bg-bg/40 p-5">
+								<summary class="cursor-pointer list-none pr-7 text-sm font-medium text-fg marker:content-none">{faq.question}<span class="float-right text-brand transition-transform group-open:rotate-45" aria-hidden="true">+</span></summary>
+								<p class="mt-3 text-sm leading-relaxed text-muted">{faq.answer}</p>
+							</details>
+						))}
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
 </BaseLayout>
 
 <script>
+	if (window.location.hash === "#playground") {
+		const playground = document.getElementById("playground");
+		const alignPlayground = () =>
+			playground?.scrollIntoView({ block: "start" });
+
+		window.addEventListener(
+			"load",
+			() => {
+				alignPlayground();
+				requestAnimationFrame(() => requestAnimationFrame(alignPlayground));
+			},
+			{ once: true },
+		);
+	}
+
 	for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
 		btn.addEventListener("click", async () => {
 			const text = btn.dataset.copy ?? "";

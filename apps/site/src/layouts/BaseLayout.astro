@@ -5,16 +5,26 @@ import "../styles/global.css";
 
 interface Props {
 	title?: string;
-	description?: string;
+	description?: string | undefined;
+	structuredData?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
 	title = "ribbit",
-	description = "Turn any seed into deterministic generative art on a canvas. Zero dependencies, tiny, framework-agnostic.",
+	description = "Deterministic generative avatars, canvas marks, SVG, PNG and WebM from any seed. Zero dependencies and no network requests.",
+	structuredData,
 } = Astro.props;
-const pageTitle = title === "ribbit" ? "ribbit — generative marks from any seed" : `${title} | ribbit`;
+const pageTitle =
+	title === "ribbit"
+		? "ribbit — deterministic avatars and generative art"
+		: `${title} | ribbit`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL("/og.svg", Astro.site);
+const schemas = structuredData
+	? Array.isArray(structuredData)
+		? structuredData
+		: [structuredData]
+	: [];
 ---
 
 <!doctype html>
@@ -33,6 +43,7 @@ const ogImage = new URL("/og.svg", Astro.site);
 		<meta property="og:url" content={canonical} />
 		<meta property="og:image" content={ogImage} />
 		<meta name="twitter:card" content="summary_large_image" />
+		{schemas.map((schema) => <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />)}
 		<title>{pageTitle}</title>
 	</head>
 	<body class="min-h-screen antialiased">
