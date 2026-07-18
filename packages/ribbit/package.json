@@ -1,11 +1,11 @@
 {
 	"name": "ribbit-canvas",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Turn any seed into deterministic generative art on a canvas. Zero dependencies.",
 	"type": "module",
 	"license": "MIT",
 	"author": {
-		"name": "David Fadón",
+		"name": "sn4pe",
 		"email": "dev@sn4pe.com",
 		"url": "https://github.com/Sn4pe"
 	},
