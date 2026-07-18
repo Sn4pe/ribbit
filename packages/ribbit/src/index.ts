@@ -128,13 +128,20 @@ export const RAMP = PALETTES.moss.ramp;
 export const BG = PALETTES.moss.background;
 
 function resolvePalette(palette?: Palette): Palette {
-	if (palette && palette.ramp.length < 2) {
+	if (palette && (!Array.isArray(palette.ramp) || palette.ramp.length < 2)) {
 		throw new Error("ribbit: palette.ramp needs at least two colors");
 	}
 	return {
 		background: palette?.background ?? BG,
 		ramp: palette?.ramp ?? RAMP,
 	};
+}
+
+function assertDimension(value: number, name: string): number {
+	if (!Number.isFinite(value) || value <= 0) {
+		throw new Error(`ribbit: ${name} must be a positive number`);
+	}
+	return value;
 }
 
 function rampColor(ramp: readonly string[], value: number): string {
@@ -164,11 +171,18 @@ const CH = ["·", "∴", ":", ";", "+", "*", "o", "#", "%", "@"];
 
 const TAU = 6.28;
 
+// Shared by the canvas and SVG painters so both backends place cells and
+// glyphs identically for the same seed.
+const DITHER_OVERDRAW = 0.6;
+const GLYPH_BASELINE = 0.75;
+
 /** FNV-1a hash of a string into an unsigned 32-bit seed. */
 export function seedFromString(s: string): number {
 	let h = 2166136261 >>> 0;
 	for (const c of s) {
-		h ^= c.charCodeAt(0);
+		// codePointAt keeps the low surrogate of astral chars (emoji); charCodeAt
+		// would hash only the lead surrogate, colliding distinct emoji seeds.
+		h ^= c.codePointAt(0) ?? 0;
 		h = Math.imul(h, 16777619) >>> 0;
 	}
 	return h >>> 0;
@@ -382,7 +396,12 @@ function paintDither(
 			idx = Math.max(0, Math.min(ramp.length - 1, idx));
 			if (idx === 0) continue;
 			ctx.fillStyle = ramp[idx];
-			ctx.fillRect(x * grid.cw, y * grid.ch, grid.cw + 0.6, grid.ch + 0.6);
+			ctx.fillRect(
+				x * grid.cw,
+				y * grid.ch,
+				grid.cw + DITHER_OVERDRAW,
+				grid.ch + DITHER_OVERDRAW,
+			);
 		}
 	}
 }
@@ -412,7 +431,7 @@ function paintGlyph(
 			ctx.fillText(
 				CH[Math.min(CH.length - 1, Math.floor(val * CH.length))],
 				x * grid.cw + grid.cw / 2,
-				y * grid.ch + grid.ch * 0.75,
+				y * grid.ch + grid.ch * GLYPH_BASELINE,
 			);
 		}
 	}
@@ -519,8 +538,8 @@ export function render(
 	options: RenderOptions = {},
 ): void {
 	const { size = 200, pattern = "dither", t = 0 } = options;
-	const width = options.width ?? size;
-	const height = options.height ?? size;
+	const width = assertDimension(options.width ?? size, "width");
+	const height = assertDimension(options.height ?? size, "height");
 	let ctx: Canvas2DContext;
 	if (is2dContext(target)) {
 		ctx = target;
@@ -546,7 +565,10 @@ export function render(
 function presetSize(options: ExportOptions): { w: number; h: number } {
 	const size = options.size ?? 200;
 	if (options.preset === "og") return { w: 1200, h: 630 };
-	return { w: options.width ?? size, h: options.height ?? size };
+	return {
+		w: assertDimension(options.width ?? size, "width"),
+		h: assertDimension(options.height ?? size, "height"),
+	};
 }
 
 function paintWithShape(
@@ -559,6 +581,8 @@ function paintWithShape(
 	shape: Shape = "rectangle",
 	palette: Palette = PALETTES.moss,
 ) {
+	const paint = PAINTERS[pattern];
+	if (!paint) throw new Error(`ribbit: unknown pattern "${pattern}"`);
 	ctx.save();
 	ctx.clearRect(0, 0, w, h);
 	if (shape === "circle") {
@@ -566,7 +590,7 @@ function paintWithShape(
 		ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
 		ctx.clip();
 	}
-	(PAINTERS[pattern] ?? paintDither)(ctx, seed, w, h, t, palette);
+	paint(ctx, seed, w, h, t, palette);
 	ctx.restore();
 }
 
@@ -678,6 +702,9 @@ function paintVideoFrame(
 /**
  * Record an animated mark to a WebM Blob in real time.
  * Browser-only: requires canvas.captureStream and MediaRecorder.
+ * Recording is driven by requestAnimationFrame, which browsers throttle in
+ * background tabs — keep the tab visible for the full duration, or frames
+ * freeze while the recorder keeps sampling the last painted frame.
  */
 export async function toWebM(
 	seed: string | number,
@@ -693,34 +720,37 @@ export async function toWebM(
 	const fps = finiteInRange(options.fps, 30, 1, 60);
 	const mimeType = webMMimeType(options.mimeType);
 	const stream = canvas.captureStream(fps);
-	const recorderOptions: MediaRecorderOptions = { mimeType };
-	if (options.videoBitsPerSecond !== undefined) {
-		recorderOptions.videoBitsPerSecond = options.videoBitsPerSecond;
-	}
-	const recorder = new MediaRecorder(stream, recorderOptions);
-	const chunks: Blob[] = [];
+	let recorder: MediaRecorder | undefined;
 	let animationFrame = 0;
 
-	const recording = new Promise<Blob>((resolve, reject) => {
-		recorder.ondataavailable = (event) => {
-			if (event.data.size > 0) chunks.push(event.data);
-		};
-		recorder.onerror = () => reject(new Error("ribbit: MediaRecorder failed"));
-		recorder.onstop = () => {
-			if (chunks.length === 0) {
-				reject(new Error("ribbit: WebM recorder returned no data"));
-				return;
-			}
-			resolve(new Blob(chunks, { type: recorder.mimeType || mimeType }));
-		};
-	});
-
 	try {
+		const recorderOptions: MediaRecorderOptions = { mimeType };
+		if (options.videoBitsPerSecond !== undefined) {
+			recorderOptions.videoBitsPerSecond = options.videoBitsPerSecond;
+		}
+		const rec = new MediaRecorder(stream, recorderOptions);
+		recorder = rec;
+		const chunks: Blob[] = [];
+
+		const recording = new Promise<Blob>((resolve, reject) => {
+			rec.ondataavailable = (event) => {
+				if (event.data.size > 0) chunks.push(event.data);
+			};
+			rec.onerror = () => reject(new Error("ribbit: MediaRecorder failed"));
+			rec.onstop = () => {
+				if (chunks.length === 0) {
+					reject(new Error("ribbit: WebM recorder returned no data"));
+					return;
+				}
+				resolve(new Blob(chunks, { type: rec.mimeType || mimeType }));
+			};
+		});
+
 		const normalizedSeed = toSeed(seed);
 		const initialT = options.t ?? 0;
 		paintVideoFrame(canvas, normalizedSeed, options, initialT);
 		options.onProgress?.(0);
-		recorder.start(250);
+		rec.start(250);
 
 		await new Promise<void>((resolve, reject) => {
 			const started = performance.now();
@@ -742,11 +772,11 @@ export async function toWebM(
 			animationFrame = requestAnimationFrame(frame);
 		});
 
-		recorder.stop();
+		rec.stop();
 		return await recording;
 	} finally {
 		if (animationFrame) cancelAnimationFrame(animationFrame);
-		if (recorder.state !== "inactive") recorder.stop();
+		if (recorder && recorder.state !== "inactive") recorder.stop();
 		for (const track of stream.getTracks()) track.stop();
 	}
 }
@@ -770,7 +800,7 @@ function ditherSVG(
 			let idx = Math.floor(val * ramp.length + (th - 0.5));
 			idx = Math.max(0, Math.min(ramp.length - 1, idx));
 			if (idx === 0) continue;
-			r += `<rect x="${(x * grid.cw).toFixed(1)}" y="${(y * grid.ch).toFixed(1)}" width="${(grid.cw + 0.4).toFixed(1)}" height="${(grid.ch + 0.4).toFixed(1)}" fill="${svgColor(ramp[idx] ?? RAMP[0])}"/>`;
+			r += `<rect x="${(x * grid.cw).toFixed(1)}" y="${(y * grid.ch).toFixed(1)}" width="${(grid.cw + DITHER_OVERDRAW).toFixed(1)}" height="${(grid.ch + DITHER_OVERDRAW).toFixed(1)}" fill="${svgColor(ramp[idx] ?? RAMP[0])}"/>`;
 		}
 	}
 	return r;
@@ -797,7 +827,7 @@ function glyphSVG(
 			const ch2 = CH[Math.min(CH.length - 1, Math.floor(val * CH.length))]
 				.replace("&", "&amp;")
 				.replace("<", "&lt;");
-			r += `<text x="${(x * grid.cw + grid.cw / 2).toFixed(1)}" y="${(y * grid.ch + grid.ch * 0.72).toFixed(1)}" font-family="monospace" font-size="${fs}" fill="${svgColor(ramp[idx] ?? RAMP[0])}" text-anchor="middle">${ch2}</text>`;
+			r += `<text x="${(x * grid.cw + grid.cw / 2).toFixed(1)}" y="${(y * grid.ch + grid.ch * GLYPH_BASELINE).toFixed(1)}" font-family="monospace" font-size="${fs}" fill="${svgColor(ramp[idx] ?? RAMP[0])}" text-anchor="middle">${ch2}</text>`;
 		}
 	}
 	return r;
@@ -846,13 +876,9 @@ export function toSVG(
 	const pattern = options.pattern ?? "dither";
 	const normalizedSeed = toSeed(seed);
 	const palette = resolvePalette(options.palette);
-	const body = (SVG_PAINTERS[pattern] ?? ditherSVG)(
-		normalizedSeed,
-		w,
-		h,
-		options.t ?? 0,
-		palette,
-	);
+	const paintSVG = SVG_PAINTERS[pattern];
+	if (!paintSVG) throw new Error(`ribbit: unknown pattern "${pattern}"`);
+	const body = paintSVG(normalizedSeed, w, h, options.t ?? 0, palette);
 	const content = `<rect width="${w}" height="${h}" fill="${svgColor(palette.background)}"/>${body}`;
 	const clipId = `ribbit-circle-${normalizedSeed.toString(16)}-${w}-${h}`;
 	const clipped =

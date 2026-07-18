@@ -36,6 +36,81 @@ describe("seed hashing", () => {
 		expect(toSeed(-1)).toBe(4294967295);
 		expect(toSeed("7")).toBe(seedFromString("7"));
 	});
+
+	test("emoji seeds hash their full codepoints, not just the lead surrogate", () => {
+		expect(seedFromString("🐸x")).not.toBe(seedFromString("🐹x"));
+	});
+});
+
+describe("input validation", () => {
+	test("unknown patterns throw instead of silently falling back to dither", () => {
+		expect(() => toSVG("x", { pattern: "dther" as Pattern })).toThrow(
+			'unknown pattern "dther"',
+		);
+	});
+
+	test("non-positive dimensions throw a descriptive error", () => {
+		expect(() => toSVG("x", { size: -50 })).toThrow(
+			"width must be a positive number",
+		);
+		expect(() => toSVG("x", { size: 0 })).toThrow("positive");
+	});
+
+	test("a palette without a ramp array is rejected", () => {
+		expect(() =>
+			toSVG("x", { palette: { background: "#111111" } as never }),
+		).toThrow("palette.ramp needs at least two colors");
+		expect(() =>
+			toSVG("x", {
+				palette: { background: "#111111", ramp: "redblue" } as never,
+			}),
+		).toThrow("palette.ramp needs at least two colors");
+	});
+});
+
+describe("canvas and SVG backends stay in sync", () => {
+	test("dither cells share the same overdraw", () => {
+		const rects: number[][] = [];
+		const context = {
+			fillStyle: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			fillRect(...args: number[]) {
+				rects.push(args);
+			},
+		} as unknown as Canvas2DContext;
+
+		render(context, "parity", { size: 480 });
+		const svg = toSVG("parity", { size: 480 });
+		const svgCellWidth = Number(
+			svg.match(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/)?.[1],
+		);
+		// The first fillRect paints the 480px background; cells follow.
+		const cellWidth = rects.find((rect) => rect[2] !== 480)?.[2];
+		expect(cellWidth).toBeCloseTo(svgCellWidth, 1);
+	});
+
+	test("glyph baselines match", () => {
+		const baselines: number[] = [];
+		const context = {
+			fillStyle: "",
+			font: "",
+			textAlign: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			fillRect() {},
+			fillText(_ch: string, _x: number, y: number) {
+				baselines.push(y);
+			},
+		} as unknown as Canvas2DContext;
+
+		render(context, "parity", { size: 480, pattern: "glyph" });
+		const svg = toSVG("parity", { size: 480, pattern: "glyph" });
+		const svgBaseline = Number(svg.match(/<text x="[^"]+" y="([^"]+)"/)?.[1]);
+		expect(baselines[0]).toBeCloseTo(svgBaseline, 0);
+	});
 });
 
 describe("framework-agnostic canvas targets", () => {

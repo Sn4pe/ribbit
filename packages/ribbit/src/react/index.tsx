@@ -41,7 +41,15 @@ export function RibbitAvatar({
 	style,
 }: RibbitAvatarProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	// Track the palette by content, not reference, so an inline palette
+	// literal on a parent re-render doesn't restart the animation loop.
+	const paletteKey = palette
+		? `${palette.background}|${palette.ramp.join(",")}`
+		: "";
+	const paletteRef = useRef(palette);
+	paletteRef.current = palette;
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: palette is read through paletteRef; paletteKey stands in for it so a same-content inline literal doesn't restart the animation
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -55,7 +63,12 @@ export function RibbitAvatar({
 
 		const normalizedSeed = toSeed(seed);
 		const paint = (t: number) =>
-			render(ctx, normalizedSeed, { size, pattern, palette, t });
+			render(ctx, normalizedSeed, {
+				size,
+				pattern,
+				palette: paletteRef.current,
+				t,
+			});
 		paint(0);
 
 		if (
@@ -87,7 +100,7 @@ export function RibbitAvatar({
 			cancelAnimationFrame(animationFrame);
 			observer.disconnect();
 		};
-	}, [animated, palette, pattern, seed, size]);
+	}, [animated, paletteKey, pattern, seed, size]);
 
 	return (
 		<span
