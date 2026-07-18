@@ -19,6 +19,8 @@ This is a monorepo:
 bun add ribbit-canvas
 ```
 
+![sample marks: wave, glyph and dither patterns across different seeds](https://raw.githubusercontent.com/Sn4pe/ribbit/main/samples.svg)
+
 ## Development
 
 ```sh
