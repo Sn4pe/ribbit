@@ -61,14 +61,6 @@ export function Avatar() {
 		: "",
 );
 
-function esc(s: string) {
-	return s
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
 const KEYWORD = "#F97583";
 const PLAIN = "#E1E4E8";
 const STRING = "#9ECBFF";
@@ -78,11 +70,16 @@ const TAG = "#79B8FF";
 const NUMBER = "#79B8FF";
 const HTML_TAG = "#85E89D";
 
-function tok(color: string, text: string) {
-	return `<span style="color:${color}">${esc(text)}</span>`;
+interface Token {
+	color: string;
+	text: string;
 }
 
-let snippetHtml = $derived(
+function tok(color: string, text: string): Token {
+	return { color, text };
+}
+
+let snippetTokens = $derived(
 	selected
 		? framework === "react"
 			? [
@@ -109,7 +106,7 @@ let snippetHtml = $derived(
 					tok(PLAIN, "{"),
 					tok(NUMBER, "96"),
 					tok(PLAIN, "} />;\n}"),
-				].join("")
+				]
 			: [
 					tok(PLAIN, "<"),
 					tok(HTML_TAG, "script"),
@@ -132,8 +129,8 @@ let snippetHtml = $derived(
 					tok(PLAIN, "={"),
 					tok(NUMBER, "96"),
 					tok(PLAIN, "} />"),
-				].join("")
-		: "",
+				]
+		: [],
 );
 
 async function open(tile: Tile) {
@@ -251,7 +248,7 @@ function mark(node: HTMLCanvasElement, tile: Tile) {
 						<button type="button" role="tab" aria-selected={framework === "react"} class:active={framework === "react"} onclick={() => (framework = "react")}>React</button>
 						<button type="button" role="tab" aria-selected={framework === "svelte"} class:active={framework === "svelte"} onclick={() => (framework = "svelte")}>Svelte</button>
 					</div>
-					<pre class="code-block"><code>{@html snippetHtml}</code><button type="button" class="install-tabs__copy" onclick={copySnippet}>{copied ? "Copied" : "Copy"}</button></pre>
+					<pre class="code-block"><code>{#each snippetTokens as t}<span style="color:{t.color}">{t.text}</span>{/each}</code><button type="button" class="install-tabs__copy" onclick={copySnippet}>{copied ? "Copied" : "Copy"}</button></pre>
 				</div>
 			</div>
 		</div>
