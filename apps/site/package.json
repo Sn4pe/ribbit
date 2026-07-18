@@ -9,6 +9,7 @@
 		"build": "astro build",
 		"gen:favicon": "bun run scripts/gen-favicon.mjs",
 		"gen:og": "bun run scripts/gen-og.mjs",
+		"gen:banner": "bun run scripts/gen-banner.mjs",
 		"preview": "astro preview",
 		"check": "biome check .",
 		"check:types": "astro check",

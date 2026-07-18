@@ -1,3 +1,5 @@
+![ribbit](https://raw.githubusercontent.com/Sn4pe/ribbit/main/banner.svg)
+
 # ribbit
 
 [![npm version](https://img.shields.io/npm/v/ribbit-canvas.svg)](https://www.npmjs.com/package/ribbit-canvas)
