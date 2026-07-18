@@ -21,6 +21,7 @@
 		"@astrojs/svelte": "^9.0.1",
 		"@fontsource-variable/geist": "^5.2.9",
 		"@fontsource-variable/geist-mono": "^5.2.6",
+		"@vercel/analytics": "^2.0.1",
 		"astro": "^7.0.9",
 		"ribbit-canvas": "workspace:*",
 		"svelte": "^5.56.5"
