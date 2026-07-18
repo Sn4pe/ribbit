@@ -61,6 +61,81 @@ export function Avatar() {
 		: "",
 );
 
+function esc(s: string) {
+	return s
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
+const KEYWORD = "#F97583";
+const PLAIN = "#E1E4E8";
+const STRING = "#9ECBFF";
+const FN_NAME = "#B392F0";
+const ATTR = "#B392F0";
+const TAG = "#79B8FF";
+const NUMBER = "#79B8FF";
+const HTML_TAG = "#85E89D";
+
+function tok(color: string, text: string) {
+	return `<span style="color:${color}">${esc(text)}</span>`;
+}
+
+let snippetHtml = $derived(
+	selected
+		? framework === "react"
+			? [
+					tok(KEYWORD, "import"),
+					tok(PLAIN, " { RibbitAvatar } "),
+					tok(KEYWORD, "from"),
+					tok(STRING, ' "ribbit-canvas/react"'),
+					tok(PLAIN, ";\n\n"),
+					tok(KEYWORD, "export"),
+					tok(KEYWORD, " function"),
+					tok(FN_NAME, " Avatar"),
+					tok(PLAIN, "() {\n  "),
+					tok(KEYWORD, "return"),
+					tok(PLAIN, " <"),
+					tok(TAG, "RibbitAvatar"),
+					tok(ATTR, " seed"),
+					tok(KEYWORD, "="),
+					tok(STRING, `"${selected.seed}"`),
+					tok(ATTR, " pattern"),
+					tok(KEYWORD, "="),
+					tok(STRING, `"${selected.pattern}"`),
+					tok(ATTR, " size"),
+					tok(KEYWORD, "="),
+					tok(PLAIN, "{"),
+					tok(NUMBER, "96"),
+					tok(PLAIN, "} />;\n}"),
+				].join("")
+			: [
+					tok(PLAIN, "<"),
+					tok(HTML_TAG, "script"),
+					tok(PLAIN, ">\n  "),
+					tok(KEYWORD, "import"),
+					tok(PLAIN, " RibbitAvatar "),
+					tok(KEYWORD, "from"),
+					tok(STRING, ' "ribbit-canvas/svelte"'),
+					tok(PLAIN, ";\n</"),
+					tok(HTML_TAG, "script"),
+					tok(PLAIN, ">\n\n<"),
+					tok(TAG, "RibbitAvatar"),
+					tok(ATTR, " seed"),
+					tok(PLAIN, "="),
+					tok(STRING, `"${selected.seed}"`),
+					tok(ATTR, " pattern"),
+					tok(PLAIN, "="),
+					tok(STRING, `"${selected.pattern}"`),
+					tok(ATTR, " size"),
+					tok(PLAIN, "={"),
+					tok(NUMBER, "96"),
+					tok(PLAIN, "} />"),
+				].join("")
+		: "",
+);
+
 async function open(tile: Tile) {
 	selected = tile;
 	copied = false;
@@ -176,7 +251,7 @@ function mark(node: HTMLCanvasElement, tile: Tile) {
 						<button type="button" role="tab" aria-selected={framework === "react"} class:active={framework === "react"} onclick={() => (framework = "react")}>React</button>
 						<button type="button" role="tab" aria-selected={framework === "svelte"} class:active={framework === "svelte"} onclick={() => (framework = "svelte")}>Svelte</button>
 					</div>
-					<pre class="code-block"><code>{snippet}</code><button type="button" class="install-tabs__copy" onclick={copySnippet}>{copied ? "Copied" : "Copy"}</button></pre>
+					<pre class="code-block"><code>{@html snippetHtml}</code><button type="button" class="install-tabs__copy" onclick={copySnippet}>{copied ? "Copied" : "Copy"}</button></pre>
 				</div>
 			</div>
 		</div>
