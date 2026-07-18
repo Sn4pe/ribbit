@@ -1,6 +1,6 @@
 {
 	"name": "ribbit-canvas",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Turn any seed into deterministic generative art on a canvas. Zero dependencies.",
 	"type": "module",
 	"license": "MIT",
