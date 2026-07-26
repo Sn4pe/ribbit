@@ -31,6 +31,15 @@ render(canvas, "null-frog", {
   palette: PALETTES.tide,
 });
 
+// Light and dark variants of every family, picked at runtime.
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+render(canvas, "null-frog", { palette: PALETTES[dark ? "tide" : "tideLight"] });
+
+// background: null drops the backdrop and paints on transparency.
+render(canvas, "null-frog", {
+  palette: { ...PALETTES.tide, background: null },
+});
+
 // Any aspect ratio, plus a true transparent circular crop.
 render(wideCanvas, "null-frog", { width: 640, height: 360, pattern: "glyph" });
 const avatar = await toBlob("ribbit", {
@@ -61,7 +70,14 @@ const webm = await toWebM("ribbit", {
 - `toDataURL(seed, options?)` and `toBlob(seed, options?)` produce a PNG.
 - `toWebM(seed, options?)` records an animated WebM in the browser.
 - `toSVG(seed, options?)` produces a standalone SVG string.
-- `PALETTES` provides moss, tide, ember and mono; `RAMP` and `BG` alias moss.
+- `PALETTES` provides moss, tide, ember and mono, each with a `*Light` variant; `RAMP` and `BG` alias moss.
+
+A palette is `{ background, ramp }`. `ramp` is ordered background-to-foreground
+and needs at least two tones; tone 0 is never painted, so the backdrop shows
+through. `background: null` skips the backdrop entirely — the canvas stays
+transparent, the SVG omits its backing rect, and PNG/WebM exports keep the alpha
+channel (override with `matte`). Coverage varies by pattern: `glyph` leaves
+~80% of the surface transparent, `wave` ~15%, `dither` almost none.
 
 `options`: `{ size?, width?, height?, pattern?, shape?, palette?, t? }`.
 Export helpers also take `preset?: "og" | "avatar"`; OG is always 1200x630.

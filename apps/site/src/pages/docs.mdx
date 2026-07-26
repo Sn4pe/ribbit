@@ -203,8 +203,9 @@ the helper rejects when the browser cannot encode any supported format.
 
 ## Palettes
 
-Every renderer accepts a palette with a background and a dark-to-light ramp.
-Ribbit ships four palettes: `moss`, `tide`, `ember` and `mono`.
+Every renderer accepts a palette with a background and a background-to-foreground
+ramp. Ribbit ships four families — `moss`, `tide`, `ember` and `mono` — each with
+a light-mode variant: `mossLight`, `tideLight`, `emberLight` and `monoLight`.
 
 ```ts
 import { PALETTES, toSVG } from "ribbit-canvas";
@@ -216,8 +217,33 @@ const cover = toSVG("launch", {
 });
 ```
 
-Custom ramps need at least two colors. Changing a palette never changes a
-seed's geometry, so the same seed and pattern retain their composition.
+Pick a variant at runtime to follow the reader's color scheme:
+
+```ts
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+render(canvas, "launch", { palette: PALETTES[dark ? "tide" : "tideLight"] });
+```
+
+### Transparent backgrounds
+
+Set `background: null` to skip the backdrop. The canvas keeps whatever is behind
+it, `toSVG` omits its backing rect, and `toBlob`/`toWebM` keep the alpha channel
+(pass `matte` to flatten onto a color instead).
+
+```ts
+render(canvas, "launch", {
+  palette: { ...PALETTES.tide, background: null },
+});
+```
+
+Only tone 0 is left unpainted, so how much shows through depends on the pattern:
+`glyph` stays around 80% transparent, `wave` around 15%, and `dither` covers
+nearly the whole surface.
+
+Custom ramps need at least two colors, so a palette override always carries a
+`ramp`.
+Changing a palette never changes a seed's geometry, so the same seed and pattern
+retain their composition.
 
 ## API reference
 
@@ -227,7 +253,7 @@ seed's geometry, so the same seed and pattern retain their composition.
 | `width`, `height` | `number` | `size` | Logical dimensions |
 | `pattern` | pattern name | `"dither"` | Dither, glyph or wave renderer |
 | `shape` | `"rectangle" \| "circle"` | `"rectangle"` | Transparent circular crop for core output |
-| `palette` | palette | moss | Background and tonal ramp |
+| `palette` | palette | moss | Background and tonal ramp; `background: null` is transparent |
 | `t` | `number` | `0` | Time in seconds |
 
 Lower-level `drawDither`, `drawGlyph` and `drawWave` paint square contexts
