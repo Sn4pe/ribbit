@@ -35,6 +35,7 @@ const cycle = () => {
 };
 
 const track = (e: PointerEvent) => {
+	if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 	const r = canvas.getBoundingClientRect();
 	warp = ((e.clientX - r.left) / r.width + (e.clientY - r.top) / r.height) * 3;
 	if (!raf) repaint?.(0);
