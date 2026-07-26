@@ -30,6 +30,7 @@
 	"sideEffects": false,
 	"files": [
 		"dist",
+		"src",
 		"svelte",
 		"README.md",
 		"LICENSE"
