@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	BG,
 	type Canvas2DContext,
+	field,
 	PALETTES,
 	type Pattern,
 	RAMP,
@@ -254,6 +255,33 @@ describe.each(PATTERNS)("custom palette with pattern %s", (pattern) => {
 		for (const color of fills(svg)) expect(allowed.has(color)).toBe(true);
 		expect(svg).toContain(`fill="${CUSTOM_PALETTE.background}"`);
 		expect(svg).not.toContain(BG);
+	});
+});
+
+describe("field", () => {
+	test("is deterministic and stays inside the 0..1 tone range", () => {
+		const a = field("ribbit");
+		const b = field("ribbit");
+		const other = field("croak");
+		let differs = false;
+		for (let i = 0; i <= 10; i++) {
+			const u = i / 10;
+			for (let j = 0; j <= 10; j++) {
+				const v = j / 10;
+				const tone = a(u, v, 0.5);
+				expect(tone).toBe(b(u, v, 0.5));
+				expect(tone).toBeGreaterThanOrEqual(0);
+				expect(tone).toBeLessThanOrEqual(1);
+				if (other(u, v, 0.5) !== tone) differs = true;
+			}
+		}
+		expect(differs).toBe(true);
+	});
+
+	test("accepts the same seed forms as the renderers", () => {
+		expect(field("7")(0.3, 0.6, 0)).toBe(
+			field(seedFromString("7"))(0.3, 0.6, 0),
+		);
 	});
 });
 
