@@ -34,6 +34,24 @@ const patterns = [
 		name: "wave",
 		note: "Seven stacked wave layers, dark to light. Soft horizons over the pond.",
 	},
+	{
+		seed: "drip",
+		pattern: "pulse",
+		name: "pulse",
+		note: "A grid of dots that swell and brighten with the field. Halftone with a heartbeat.",
+	},
+	{
+		seed: "warren",
+		pattern: "maze",
+		name: "maze",
+		note: "Seeded diagonals in the 10 PRINT tradition. A labyrinth the field lights up.",
+	},
+	{
+		seed: "rain",
+		pattern: "bars",
+		name: "bars",
+		note: "Vertical bars rising with the field, cell by cell. A quiet equalizer.",
+	},
 ] as const;
 
 const description =
@@ -144,24 +162,57 @@ const structuredData = [
 		</div>
 	</section>
 
-	<section class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
-		<h2 class="max-w-2xl text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Three ways to read the same field.</h2>
-		<p class="mono mt-3 max-w-2xl text-sm text-muted">Every pattern samples one seeded value field. Switch the lens, keep the seed.</p>
-		<div class="mt-10 grid gap-8 sm:grid-cols-3">
-			{
-				patterns.map((p) => (
-					<article class="flex flex-col">
-						<Ribbit client:visible seed={p.seed} pattern={p.pattern} size={280} radius="12px" />
-						<div class="mt-4 flex items-baseline justify-between">
-							<h3 class="mono text-base text-fg">{p.name}</h3>
-							<span class="mono text-xs text-faint">{p.seed}</span>
-						</div>
-						<p class="mt-2 text-sm leading-relaxed text-muted">{p.note}</p>
-					</article>
-				))
-			}
+	<section id="patterns-scroll" class="relative">
+		<div data-pattern-panel class="flex flex-col justify-center py-20">
+			<div class="mx-auto w-full max-w-6xl px-5 lg:px-8">
+				<h2 class="max-w-2xl text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Six ways to read the same field.</h2>
+				<p class="mono mt-3 max-w-2xl text-sm text-muted">Every pattern samples one seeded value field. Switch the lens, keep the seed.</p>
+				<div data-pattern-track class="mt-10 flex gap-8 overflow-x-auto pb-4 will-change-transform">
+					{
+						patterns.map((p) => (
+							<article class="flex w-[280px] shrink-0 flex-col">
+								<Ribbit client:visible seed={p.seed} pattern={p.pattern} size={280} radius="12px" />
+								<div class="mt-4 flex items-baseline justify-between">
+									<h3 class="mono text-base text-fg">{p.name}</h3>
+									<span class="mono text-xs text-faint">{p.seed}</span>
+								</div>
+								<p class="mt-2 text-sm leading-relaxed text-muted">{p.note}</p>
+							</article>
+						))
+					}
+				</div>
+			</div>
 		</div>
 	</section>
+
+	<script>
+		const section = document.getElementById("patterns-scroll");
+		const panel = section?.querySelector<HTMLElement>("[data-pattern-panel]");
+		const track = section?.querySelector<HTMLElement>("[data-pattern-track]");
+		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (section && panel && track && !reduce && window.innerHeight >= 640) {
+			panel.classList.add("sticky", "top-0", "h-svh", "overflow-hidden");
+			panel.classList.remove("py-20");
+			track.classList.remove("overflow-x-auto", "pb-4");
+			let overflow = 0;
+			const measure = () => {
+				overflow = Math.max(0, track.scrollWidth - track.clientWidth);
+				section.style.height = `${panel.offsetHeight + overflow}px`;
+			};
+			const onScroll = () => {
+				const top = section.getBoundingClientRect().top;
+				const progress = Math.min(1, Math.max(0, -top / Math.max(1, overflow)));
+				track.style.transform = `translateX(${-progress * overflow}px)`;
+			};
+			measure();
+			onScroll();
+			window.addEventListener("scroll", onScroll, { passive: true });
+			window.addEventListener("resize", () => {
+				measure();
+				onScroll();
+			});
+		}
+	</script>
 
 	<section id="grid" class="border-t border-line bg-surface/30">
 		<div class="mx-auto max-w-6xl px-5 py-20 lg:px-8">
