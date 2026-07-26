@@ -2,12 +2,22 @@
  * ribbit - turn any seed into deterministic generative art on a canvas.
  * Framework-agnostic core, zero runtime dependencies.
  *
- * Three patterns (dither, glyph and wave) share one deterministic seeded
- * engine. A static frame uses `t = 0`; advancing `t` animates the same mark.
- * Rendering supports responsive aspect ratios, shapes and color palettes.
+ * Six patterns (dither, glyph, pulse, maze, bars and wave) share one
+ * deterministic seeded engine. A static frame uses `t = 0`; advancing `t`
+ * animates the same mark. Rendering supports responsive aspect ratios, shapes
+ * and color palettes.
  */
 
-export type Pattern = "dither" | "glyph" | "wave";
+export const PATTERNS = [
+	"dither",
+	"glyph",
+	"pulse",
+	"maze",
+	"bars",
+	"wave",
+] as const;
+
+export type Pattern = (typeof PATTERNS)[number];
 
 /** Clip applied to the rendered mark. Circles are transparent outside the disc. */
 export type Shape = "rectangle" | "circle";
@@ -195,7 +205,9 @@ const CH = ["·", "∴", ":", ";", "+", "*", "o", "#", "%", "@"];
 
 const TAU = 6.28;
 
+const DITHER_GRID = 22;
 const DITHER_OVERDRAW = 0.6;
+const GLYPH_GRID = 13;
 const GLYPH_BASELINE = 0.75;
 
 /** FNV-1a hash of a string into an unsigned 32-bit seed. */
@@ -417,6 +429,39 @@ function litValue(value: number, glow: Glow, cx: number, cy: number): number {
 	return glow ? Math.min(1, value + glow(cx, cy)) : value;
 }
 
+function forEachTone(
+	f: Field,
+	grid: Grid,
+	w: number,
+	h: number,
+	t: number,
+	ramp: readonly string[],
+	glow: Glow,
+	cb: (
+		idx: number,
+		val: number,
+		cx: number,
+		cy: number,
+		x: number,
+		y: number,
+	) => void,
+) {
+	const ox = (w - grid.span) / 2;
+	const oy = (h - grid.span) / 2;
+	for (let y = 0; y < grid.rows; y++) {
+		const cy = y * grid.ch + grid.ch / 2;
+		const v = (y * grid.ch - oy) / grid.span;
+		for (let x = 0; x < grid.cols; x++) {
+			const cx = x * grid.cw + grid.cw / 2;
+			const u = (x * grid.cw - ox) / grid.span;
+			const val = litValue(f(u, v, t), glow, cx, cy);
+			const idx = Math.min(ramp.length - 1, Math.floor(val * ramp.length));
+			if (idx === 0) continue;
+			cb(idx, val, cx, cy, x, y);
+		}
+	}
+}
+
 function paintDither(
 	ctx: Ctx,
 	seed: number,
@@ -429,7 +474,7 @@ function paintDither(
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
 	paintBackground(ctx, w, h, palette);
-	const grid = gridFor(w, h, 22);
+	const grid = gridFor(w, h, DITHER_GRID);
 	for (let y = 0; y < grid.rows; y++) {
 		for (let x = 0; x < grid.cols; x++) {
 			const { u, v } = gridSample(x, y, grid, w, h);
@@ -463,31 +508,171 @@ function paintGlyph(
 	palette: Palette,
 	glow: Glow = null,
 ) {
-	const f = fieldFn(seed);
 	const ramp = palette.ramp;
 	paintBackground(ctx, w, h, palette);
-	const grid = gridFor(w, h, 13);
+	const grid = gridFor(w, h, GLYPH_GRID);
 	ctx.textAlign = "center";
 	ctx.font = `${(Math.min(grid.cw, grid.ch) * 0.95).toFixed(1)}px monospace`;
-	for (let y = 0; y < grid.rows; y++) {
-		for (let x = 0; x < grid.cols; x++) {
-			const { u, v } = gridSample(x, y, grid, w, h);
-			const val = litValue(
-				f(u, v, t),
-				glow,
-				x * grid.cw + grid.cw / 2,
-				y * grid.ch + grid.ch / 2,
-			);
-			const idx = Math.min(ramp.length - 1, Math.floor(val * ramp.length));
-			if (idx === 0) continue;
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		glow,
+		(idx, val, cx, _cy, _x, y) => {
 			ctx.fillStyle = ramp[idx];
 			ctx.fillText(
 				CH[Math.min(CH.length - 1, Math.floor(val * CH.length))],
-				x * grid.cw + grid.cw / 2,
+				cx,
 				y * grid.ch + grid.ch * GLYPH_BASELINE,
 			);
-		}
-	}
+		},
+	);
+}
+
+const MAZE_GRID = 12;
+const MAZE_THICKNESS = 0.3;
+
+function mazeUp(seed: number, x: number, y: number): boolean {
+	let h = (seed ^ Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
+	h = Math.imul(h ^ (h >>> 13), 16777619) >>> 0;
+	return h >>> 31 === 1;
+}
+
+function mazePoints(
+	x: number,
+	y: number,
+	cw: number,
+	ch: number,
+	up: boolean,
+	thickness: number,
+): [number, number][] {
+	const [x1, y1, x2, y2] = up ? [x, y + ch, x + cw, y] : [x, y, x + cw, y + ch];
+	const dx = x2 - x1;
+	const dy = y2 - y1;
+	const len = Math.hypot(dx, dy);
+	const px = (-dy / len) * (thickness / 2);
+	const py = (dx / len) * (thickness / 2);
+	return [
+		[x1 + px, y1 + py],
+		[x2 + px, y2 + py],
+		[x2 - px, y2 - py],
+		[x1 - px, y1 - py],
+	];
+}
+
+function mazeQuads(grid: Grid): [number, number][][] {
+	const thickness = Math.min(grid.cw, grid.ch) * MAZE_THICKNESS;
+	return [
+		mazePoints(0, 0, grid.cw, grid.ch, false, thickness),
+		mazePoints(0, 0, grid.cw, grid.ch, true, thickness),
+	];
+}
+
+function paintMaze(
+	ctx: Ctx,
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+	glow: Glow = null,
+) {
+	const ramp = palette.ramp;
+	paintBackground(ctx, w, h, palette);
+	const grid = gridFor(w, h, MAZE_GRID);
+	const quads = mazeQuads(grid);
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		glow,
+		(idx, _v, _cx, _cy, x, y) => {
+			ctx.fillStyle = ramp[idx];
+			const q = quads[mazeUp(seed, x, y) ? 1 : 0];
+			const ox = x * grid.cw;
+			const oy = y * grid.ch;
+			ctx.beginPath();
+			ctx.moveTo(ox + q[0][0], oy + q[0][1]);
+			ctx.lineTo(ox + q[1][0], oy + q[1][1]);
+			ctx.lineTo(ox + q[2][0], oy + q[2][1]);
+			ctx.lineTo(ox + q[3][0], oy + q[3][1]);
+			ctx.closePath();
+			ctx.fill();
+		},
+	);
+}
+
+const BARS_GRID = 16;
+const BARS_WIDTH = 0.72;
+
+function paintBars(
+	ctx: Ctx,
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+	glow: Glow = null,
+) {
+	const ramp = palette.ramp;
+	paintBackground(ctx, w, h, palette);
+	const grid = gridFor(w, h, BARS_GRID);
+	const barWidth = grid.cw * BARS_WIDTH;
+	const inset = (grid.cw - barWidth) / 2;
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		glow,
+		(idx, val, _cx, _cy, x, y) => {
+			ctx.fillStyle = ramp[idx];
+			const barHeight = grid.ch * val;
+			ctx.fillRect(
+				x * grid.cw + inset,
+				y * grid.ch + (grid.ch - barHeight),
+				barWidth,
+				barHeight,
+			);
+		},
+	);
+}
+
+const PULSE_GRID = 16;
+const PULSE_MIN_RADIUS = 0.22;
+const PULSE_MAX_RADIUS = 0.92;
+
+function pulseRadius(value: number): number {
+	return PULSE_MIN_RADIUS + (PULSE_MAX_RADIUS - PULSE_MIN_RADIUS) * value;
+}
+
+function paintPulse(
+	ctx: Ctx,
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+	glow: Glow = null,
+) {
+	const ramp = palette.ramp;
+	paintBackground(ctx, w, h, palette);
+	const grid = gridFor(w, h, PULSE_GRID);
+	const r = Math.min(grid.cw, grid.ch) / 2;
+	forEachTone(fieldFn(seed), grid, w, h, t, ramp, glow, (idx, val, cx, cy) => {
+		ctx.fillStyle = ramp[idx];
+		ctx.beginPath();
+		ctx.arc(cx, cy, r * pulseRadius(val), 0, Math.PI * 2);
+		ctx.fill();
+	});
 }
 
 function paintWave(
@@ -537,8 +722,11 @@ const PAINTERS: Record<
 		glow?: Glow,
 	) => void
 > = {
+	bars: paintBars,
 	dither: paintDither,
 	glyph: paintGlyph,
+	maze: paintMaze,
+	pulse: paintPulse,
 	wave: paintWave,
 };
 
@@ -903,7 +1091,7 @@ function ditherSVG(
 ): string {
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
-	const grid = gridFor(w, h, 22);
+	const grid = gridFor(w, h, DITHER_GRID);
 	let r = "";
 	for (let y = 0; y < grid.rows; y++) {
 		for (let x = 0; x < grid.cols; x++) {
@@ -926,23 +1114,105 @@ function glyphSVG(
 	t: number,
 	palette: Palette,
 ): string {
-	const f = fieldFn(seed);
 	const ramp = palette.ramp;
-	const grid = gridFor(w, h, 13);
+	const grid = gridFor(w, h, GLYPH_GRID);
 	const fs = (Math.min(grid.cw, grid.ch) * 0.95).toFixed(1);
 	let r = "";
-	for (let y = 0; y < grid.rows; y++) {
-		for (let x = 0; x < grid.cols; x++) {
-			const { u, v } = gridSample(x, y, grid, w, h);
-			const val = f(u, v, t);
-			const idx = Math.min(ramp.length - 1, Math.floor(val * ramp.length));
-			if (idx === 0) continue;
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		null,
+		(idx, val, cx, _cy, _x, y) => {
 			const ch2 = CH[Math.min(CH.length - 1, Math.floor(val * CH.length))]
 				.replace("&", "&amp;")
 				.replace("<", "&lt;");
-			r += `<text x="${(x * grid.cw + grid.cw / 2).toFixed(1)}" y="${(y * grid.ch + grid.ch * GLYPH_BASELINE).toFixed(1)}" font-family="monospace" font-size="${fs}" fill="${svgColor(ramp[idx] ?? RAMP[0])}" text-anchor="middle">${ch2}</text>`;
-		}
-	}
+			r += `<text x="${cx.toFixed(1)}" y="${(y * grid.ch + grid.ch * GLYPH_BASELINE).toFixed(1)}" font-family="monospace" font-size="${fs}" fill="${svgColor(ramp[idx] ?? RAMP[0])}" text-anchor="middle">${ch2}</text>`;
+		},
+	);
+	return r;
+}
+
+function mazeSVG(
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+): string {
+	const ramp = palette.ramp;
+	const grid = gridFor(w, h, MAZE_GRID);
+	const quads = mazeQuads(grid);
+	let r = "";
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		null,
+		(idx, _v, _cx, _cy, x, y) => {
+			const q = quads[mazeUp(seed, x, y) ? 1 : 0];
+			const ox = x * grid.cw;
+			const oy = y * grid.ch;
+			const d = q
+				.map(
+					([px, py], i) =>
+						`${i === 0 ? "M" : "L"}${(ox + px).toFixed(1)} ${(oy + py).toFixed(1)}`,
+				)
+				.join(" ");
+			r += `<path d="${d} Z" fill="${svgColor(ramp[idx] ?? RAMP[0])}"/>`;
+		},
+	);
+	return r;
+}
+
+function barsSVG(
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+): string {
+	const ramp = palette.ramp;
+	const grid = gridFor(w, h, BARS_GRID);
+	const barWidth = grid.cw * BARS_WIDTH;
+	const inset = (grid.cw - barWidth) / 2;
+	let r = "";
+	forEachTone(
+		fieldFn(seed),
+		grid,
+		w,
+		h,
+		t,
+		ramp,
+		null,
+		(idx, val, _cx, _cy, x, y) => {
+			const barHeight = grid.ch * val;
+			r += `<rect x="${(x * grid.cw + inset).toFixed(1)}" y="${(y * grid.ch + (grid.ch - barHeight)).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${svgColor(ramp[idx] ?? RAMP[0])}"/>`;
+		},
+	);
+	return r;
+}
+
+function pulseSVG(
+	seed: number,
+	w: number,
+	h: number,
+	t: number,
+	palette: Palette,
+): string {
+	const ramp = palette.ramp;
+	const grid = gridFor(w, h, PULSE_GRID);
+	const radius = Math.min(grid.cw, grid.ch) / 2;
+	let r = "";
+	forEachTone(fieldFn(seed), grid, w, h, t, ramp, null, (idx, val, cx, cy) => {
+		r += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(radius * pulseRadius(val)).toFixed(1)}" fill="${svgColor(ramp[idx] ?? RAMP[0])}"/>`;
+	});
 	return r;
 }
 
@@ -975,8 +1245,11 @@ const SVG_PAINTERS: Record<
 	Pattern,
 	(seed: number, w: number, h: number, t: number, palette: Palette) => string
 > = {
+	bars: barsSVG,
 	dither: ditherSVG,
 	glyph: glyphSVG,
+	maze: mazeSVG,
+	pulse: pulseSVG,
 	wave: waveSVG,
 };
 
