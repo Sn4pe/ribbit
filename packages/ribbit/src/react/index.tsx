@@ -2,7 +2,13 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
-import { type Palette, type Pattern, render, toSeed } from "../index.js";
+import {
+	type Palette,
+	type Pattern,
+	type Pointer,
+	renderReactive,
+	toSeed,
+} from "../index.js";
 
 export interface RibbitAvatarProps {
 	/** Any string or number. The same seed always yields the same mark. */
@@ -17,6 +23,11 @@ export interface RibbitAvatarProps {
 	palette?: Palette;
 	/** Evolve the mark over time. Default false. */
 	animated?: boolean;
+	/**
+	 * Let the cells light up around the cursor. Ignored on touch and when the
+	 * reader asks for reduced motion. Default false.
+	 */
+	reactive?: boolean;
 	/** Extra classes for the clipping wrapper. */
 	className?: string;
 	/** Extra inline styles for the clipping wrapper. */
@@ -37,10 +48,13 @@ export function RibbitAvatar({
 	radius = "9999px",
 	palette,
 	animated = false,
+	reactive = false,
 	className,
 	style,
 }: RibbitAvatarProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const pointerRef = useRef<Pointer | null>(null);
+	const repaintRef = useRef<(() => void) | null>(null);
 	const paletteKey = palette
 		? `${palette.background}|${palette.ramp.join(",")}`
 		: "";
@@ -61,19 +75,23 @@ export function RibbitAvatar({
 
 		const normalizedSeed = toSeed(seed);
 		const paint = (t: number) =>
-			render(ctx, normalizedSeed, {
+			renderReactive(ctx, normalizedSeed, {
 				size,
 				pattern,
 				palette: paletteRef.current,
+				pointer: pointerRef.current,
 				t,
 			});
 		paint(0);
+		repaintRef.current = () => paint(0);
 
 		if (
 			!animated ||
 			window.matchMedia("(prefers-reduced-motion: reduce)").matches
 		) {
-			return;
+			return () => {
+				repaintRef.current = null;
+			};
 		}
 
 		let animationFrame = 0;
@@ -97,8 +115,26 @@ export function RibbitAvatar({
 		return () => {
 			cancelAnimationFrame(animationFrame);
 			observer.disconnect();
+			repaintRef.current = null;
 		};
 	}, [animated, paletteKey, pattern, seed, size]);
+
+	const trackPointer = (event: React.PointerEvent<HTMLCanvasElement>) => {
+		if (!reactive || event.pointerType === "touch") return;
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		const box = event.currentTarget.getBoundingClientRect();
+		pointerRef.current = {
+			x: event.clientX - box.left,
+			y: event.clientY - box.top,
+		};
+		if (!animated) repaintRef.current?.();
+	};
+
+	const dropPointer = () => {
+		if (!pointerRef.current) return;
+		pointerRef.current = null;
+		if (!animated) repaintRef.current?.();
+	};
 
 	return (
 		<span
@@ -114,6 +150,9 @@ export function RibbitAvatar({
 		>
 			<canvas
 				ref={canvasRef}
+				onPointerMove={trackPointer}
+				onPointerLeave={dropPointer}
+				onPointerCancel={dropPointer}
 				style={{ display: "block", width: "100%", height: "100%" }}
 			/>
 		</span>
