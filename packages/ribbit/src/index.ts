@@ -406,6 +406,17 @@ function wavePosition(
 	return flip ? crossExtent - position : position;
 }
 
+/**
+ * Extra tone a cell picks up, given the center of that cell. Cell painters
+ * fold it into the field value *before* quantizing, so a lit cell climbs the
+ * ramp instead of getting an overlay drawn on top of it.
+ */
+type Glow = ((cx: number, cy: number) => number) | null;
+
+function litValue(value: number, glow: Glow, cx: number, cy: number): number {
+	return glow ? Math.min(1, value + glow(cx, cy)) : value;
+}
+
 function paintDither(
 	ctx: Ctx,
 	seed: number,
@@ -413,6 +424,7 @@ function paintDither(
 	h: number,
 	t: number,
 	palette: Palette,
+	glow: Glow = null,
 ) {
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
@@ -421,7 +433,12 @@ function paintDither(
 	for (let y = 0; y < grid.rows; y++) {
 		for (let x = 0; x < grid.cols; x++) {
 			const { u, v } = gridSample(x, y, grid, w, h);
-			const val = f(u, v, t);
+			const val = litValue(
+				f(u, v, t),
+				glow,
+				x * grid.cw + grid.cw / 2,
+				y * grid.ch + grid.ch / 2,
+			);
 			const th = BAYER[y % 4][x % 4];
 			let idx = Math.floor(val * ramp.length + (th - 0.5));
 			idx = Math.max(0, Math.min(ramp.length - 1, idx));
@@ -444,6 +461,7 @@ function paintGlyph(
 	h: number,
 	t: number,
 	palette: Palette,
+	glow: Glow = null,
 ) {
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
@@ -454,7 +472,12 @@ function paintGlyph(
 	for (let y = 0; y < grid.rows; y++) {
 		for (let x = 0; x < grid.cols; x++) {
 			const { u, v } = gridSample(x, y, grid, w, h);
-			const val = f(u, v, t);
+			const val = litValue(
+				f(u, v, t),
+				glow,
+				x * grid.cw + grid.cw / 2,
+				y * grid.ch + grid.ch / 2,
+			);
 			const idx = Math.min(ramp.length - 1, Math.floor(val * ramp.length));
 			if (idx === 0) continue;
 			ctx.fillStyle = ramp[idx];
@@ -511,6 +534,7 @@ const PAINTERS: Record<
 		h: number,
 		t: number,
 		palette: Palette,
+		glow?: Glow,
 	) => void
 > = {
 	dither: paintDither,
@@ -569,16 +593,7 @@ export function render(
 	const { size = 200, pattern = "dither", t = 0 } = options;
 	const width = assertDimension(options.width ?? size, "width");
 	const height = assertDimension(options.height ?? size, "height");
-	let ctx: Canvas2DContext;
-	if (is2dContext(target)) {
-		ctx = target;
-	} else {
-		target.width = width;
-		target.height = height;
-		const c = target.getContext("2d");
-		if (!c) throw new Error("ribbit: could not get a 2D context");
-		ctx = c;
-	}
+	const ctx = resolveContext(target, width, height);
 	paintWithShape(
 		ctx,
 		toSeed(seed),
@@ -588,6 +603,74 @@ export function render(
 		t,
 		options.shape,
 		resolvePalette(options.palette),
+	);
+}
+
+function resolveContext(
+	target: RenderTarget,
+	width: number,
+	height: number,
+): Canvas2DContext {
+	if (is2dContext(target)) return target;
+	target.width = width;
+	target.height = height;
+	const ctx = target.getContext("2d");
+	if (!ctx) throw new Error("ribbit: could not get a 2D context");
+	return ctx;
+}
+
+/** A point in the same coordinate space the mark is drawn in. */
+export interface Pointer {
+	x: number;
+	y: number;
+}
+
+export interface ReactiveOptions extends RenderOptions {
+	/** Where the cursor is, or `null` when it is away. */
+	pointer?: Pointer | null;
+	/** How far the glow reaches, as a fraction of the shortest side. */
+	glowRadius?: number;
+	/** How far the glow pushes a lit cell up the tonal ramp. */
+	glowBoost?: number;
+}
+
+/**
+ * Render a mark whose cells react to a pointer. The glow is folded into the
+ * field before it is quantized, so cells change tone rather than getting an
+ * overlay drawn on top of them.
+ *
+ * Canvas-only by nature: with no pointer — or for `wave`, which has no cell
+ * grid — this is exactly `render`, so the mark at rest is the one ribbit
+ * generates and static exports stay untouched.
+ */
+export function renderReactive(
+	target: RenderTarget,
+	seed: string | number,
+	options: ReactiveOptions = {},
+): void {
+	const { size = 200, pattern = "dither", t = 0, pointer } = options;
+	if (!pointer || pattern === "wave") {
+		render(target, seed, options);
+		return;
+	}
+	const width = assertDimension(options.width ?? size, "width");
+	const height = assertDimension(options.height ?? size, "height");
+	const reach = Math.min(width, height) * (options.glowRadius ?? 0.42);
+	const boost = options.glowBoost ?? 0.6;
+	const glow: Glow = (cx, cy) => {
+		const d = Math.hypot(cx - pointer.x, cy - pointer.y) / reach;
+		return d < 1 ? (1 - d) * (1 - d) * boost : 0;
+	};
+	paintWithShape(
+		resolveContext(target, width, height),
+		toSeed(seed),
+		width,
+		height,
+		pattern,
+		t,
+		options.shape,
+		resolvePalette(options.palette),
+		glow,
 	);
 }
 
@@ -609,6 +692,7 @@ function paintWithShape(
 	t: number,
 	shape: Shape = "rectangle",
 	palette: Palette = PALETTES.moss,
+	glow: Glow = null,
 ) {
 	const paint = PAINTERS[pattern];
 	if (!paint) throw new Error(`ribbit: unknown pattern "${pattern}"`);
@@ -619,7 +703,7 @@ function paintWithShape(
 		ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
 		ctx.clip();
 	}
-	paint(ctx, seed, w, h, t, palette);
+	paint(ctx, seed, w, h, t, palette, glow);
 	ctx.restore();
 }
 
