@@ -270,6 +270,26 @@ describe("built-in palettes", () => {
 		}
 	});
 
+	test("a null background leaves the backdrop transparent", () => {
+		const clear = { background: null, ramp: RAMP };
+		const svg = toSVG("clear", { palette: clear });
+		expect(svg).not.toContain(`<rect width="1200"`);
+		expect(fills(svg)).not.toContain(BG);
+
+		const painted: string[] = [];
+		const context = {
+			fillStyle: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			fillRect(...args: number[]) {
+				painted.push(`${this.fillStyle}@${args[2]}x${args[3]}`);
+			},
+		} as unknown as Canvas2DContext;
+		render(context, "clear", { size: 480, palette: clear });
+		expect(painted).not.toContain(`${BG}@480x480`);
+	});
+
 	test("rejects ramps that cannot express a tonal field", () => {
 		expect(() =>
 			toSVG("flat", {
