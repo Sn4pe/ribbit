@@ -1,7 +1,5 @@
 <script lang="ts">
-import { type Pattern, render, toSeed } from "ribbit-canvas";
-
-const PATTERNS: Pattern[] = ["dither", "glyph", "wave"];
+import { PATTERNS, type Pattern, render, toSeed } from "ribbit-canvas";
 
 const PALETTE = {
 	background: "#16251a",
