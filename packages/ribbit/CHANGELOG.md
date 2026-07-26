@@ -4,7 +4,7 @@ All notable changes to `ribbit-canvas`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-07-26
 
 ### Added
 
@@ -14,6 +14,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and react to the pointer through `renderReactive`.
 - `PATTERNS` const exporting every pattern name in display order; the `Pattern`
   type is now derived from it.
+
+### Fixed
+
+- The Svelte typings were missing the `reactive` prop and silently accepted
+  unknown props; `RibbitProps` is now closed and complete.
 
 ## [1.1.0] - 2026-07-26
 
@@ -75,6 +80,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - React and Svelte adapters (`RibbitAvatar`), both optional peer dependencies.
 - Built-in palettes: moss, tide, ember and mono.
 
+[1.2.0]: https://github.com/Sn4pe/ribbit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Sn4pe/ribbit/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/Sn4pe/ribbit/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Sn4pe/ribbit/compare/v1.0.0...v1.0.1
