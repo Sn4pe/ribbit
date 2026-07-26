@@ -14,7 +14,7 @@ tiny.
 bun add ribbit-canvas
 ```
 
-![sample marks: wave, glyph and dither patterns across different seeds](https://raw.githubusercontent.com/Sn4pe/ribbit/main/samples.svg)
+![sample marks: wave, glyph, dither, maze, pulse and bars patterns across different seeds](https://raw.githubusercontent.com/Sn4pe/ribbit/main/samples.svg)
 
 ## Core
 
@@ -66,7 +66,8 @@ const webm = await toWebM("ribbit", {
 
 - `seedFromString(s)` and `toSeed(input)` normalize a string or number to a uint32 seed.
 - `render(target, seed, options?)` where `target` is a canvas or a 2D context.
-- `drawDither(ctx, seed, size, t?, palette?)`, `drawGlyph(...)`, `drawWave(...)` draw one pattern.
+- `drawDither(ctx, seed, size, t?, palette?)`, `drawGlyph(...)`, `drawWave(...)` draw one pattern; the other patterns are render-only via `render(target, seed, { pattern })`.
+- `PATTERNS` lists every pattern name (`dither`, `glyph`, `pulse`, `maze`, `bars`, `wave`); the `Pattern` type is derived from it.
 - `toDataURL(seed, options?)` and `toBlob(seed, options?)` produce a PNG.
 - `toWebM(seed, options?)` records an animated WebM in the browser.
 - `toSVG(seed, options?)` produces a standalone SVG string.
@@ -78,8 +79,9 @@ A palette is `{ background, ramp }`. `ramp` is ordered background-to-foreground
 and needs at least two tones; tone 0 is never painted, so the backdrop shows
 through. `background: null` skips the backdrop entirely — the canvas stays
 transparent, the SVG omits its backing rect, and PNG/WebM exports keep the alpha
-channel (override with `matte`). Coverage varies by pattern: `glyph` leaves
-~80% of the surface transparent, `wave` ~15%, `dither` almost none.
+channel (override with `matte`). Coverage varies by pattern: `glyph` and
+`maze` stay mostly transparent, `pulse` and `bars` cover about half, `wave`
+~15%, `dither` almost none.
 
 `options`: `{ size?, width?, height?, pattern?, shape?, palette?, t? }`.
 Export helpers also take `preset?: "og" | "avatar"`; OG is always 1200x630.

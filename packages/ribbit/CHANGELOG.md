@@ -4,6 +4,17 @@ All notable changes to `ribbit-canvas`. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Three new patterns: `pulse` (dots that swell and brighten with the field),
+  `maze` (seeded diagonals in the 10 PRINT tradition) and `bars` (vertical bars
+  rising with the field). All three are cell-based, so they animate with `t`
+  and react to the pointer through `renderReactive`.
+- `PATTERNS` const exporting every pattern name in display order; the `Pattern`
+  type is now derived from it.
+
 ## [1.1.0] - 2026-07-26
 
 ### Added
