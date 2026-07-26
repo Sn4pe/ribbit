@@ -19,7 +19,6 @@ const CUSTOM_PALETTE = {
 	ramp: ["#201030", "#482060", "#783c96", "#b86bd1", "#f1b4ff"],
 } as const;
 
-// Pull every fill="#xxxxxx" out of an SVG string.
 function fills(svg: string): string[] {
 	return [...svg.matchAll(/fill="(#[0-9a-f]{6})"/g)].map((m) => m[1]);
 }
@@ -86,7 +85,6 @@ describe("canvas and SVG backends stay in sync", () => {
 		const svgCellWidth = Number(
 			svg.match(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/)?.[1],
 		);
-		// The first fillRect paints the 480px background; cells follow.
 		const cellWidth = rects.find((rect) => rect[2] !== 480)?.[2];
 		expect(cellWidth).toBeCloseTo(svgCellWidth, 1);
 	});
@@ -183,7 +181,6 @@ describe.each(PATTERNS)("pattern %s", (pattern) => {
 });
 
 describe("time evolves the field", () => {
-	// Glyph/dither share one field, so a later frame should differ from t=0.
 	test("dither frame at t>0 differs from the static frame", () => {
 		expect(toSVG("ribbit", { pattern: "dither", t: 3 })).not.toBe(
 			toSVG("ribbit", { pattern: "dither", t: 0 }),
@@ -198,8 +195,6 @@ describe("wave composition", () => {
 			(match) => match[1],
 		);
 
-		// The final path sits on top. For an inverted field it must be the
-		// shallow dark layer, not the broad bright layer that hides the bands.
 		expect(pathFills.at(-1)).toBe(RAMP[1]);
 		expect(new Set(pathFills).size).toBeGreaterThan(3);
 	});

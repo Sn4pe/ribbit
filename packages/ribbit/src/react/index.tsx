@@ -41,8 +41,6 @@ export function RibbitAvatar({
 	style,
 }: RibbitAvatarProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	// Track the palette by content, not reference, so an inline palette
-	// literal on a parent re-render doesn't restart the animation loop.
 	const paletteKey = palette
 		? `${palette.background}|${palette.ramp.join(",")}`
 		: "";

@@ -195,8 +195,6 @@ const CH = ["·", "∴", ":", ";", "+", "*", "o", "#", "%", "@"];
 
 const TAU = 6.28;
 
-// Shared by the canvas and SVG painters so both backends place cells and
-// glyphs identically for the same seed.
 const DITHER_OVERDRAW = 0.6;
 const GLYPH_BASELINE = 0.75;
 
@@ -204,8 +202,6 @@ const GLYPH_BASELINE = 0.75;
 export function seedFromString(s: string): number {
 	let h = 2166136261 >>> 0;
 	for (const c of s) {
-		// codePointAt keeps the low surrogate of astral chars (emoji); charCodeAt
-		// would hash only the lead surrogate, colliding distinct emoji seeds.
 		h ^= c.codePointAt(0) ?? 0;
 		h = Math.imul(h, 16777619) >>> 0;
 	}
