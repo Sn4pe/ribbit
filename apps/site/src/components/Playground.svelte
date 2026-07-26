@@ -3,8 +3,9 @@ import {
 	PALETTES,
 	type PaletteName,
 	type Pattern,
+	type Pointer,
 	type Preset,
-	render,
+	renderReactive,
 	type Shape,
 	toBlob,
 	toSeed,
@@ -35,11 +36,14 @@ let size = $state(256);
 let format = $state<Preset>("avatar");
 let shape = $state<Shape>("circle");
 let animated = $state(false);
+let reactToCursor = $state(false);
 let busy = $state<"png" | "webm" | null>(null);
 let progress = $state(0);
 let exportError = $state("");
 
 let canvas: HTMLCanvasElement;
+let cursor: Pointer | null = null;
+let redraw: ((t: number) => void) | null = null;
 
 $effect(() => {
 	const s = toSeed(seed || " ");
@@ -59,20 +63,26 @@ $effect(() => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		render(ctx, s, {
-			width: cssWidth,
-			height: cssHeight,
+		renderReactive(ctx, s, {
 			pattern: pat,
 			palette: colors,
+			width: cssWidth,
+			height: cssHeight,
 			shape: output === "avatar" ? crop : "rectangle",
+			pointer: cursor,
 			t,
 		});
 	};
 
+	redraw = draw;
 	draw(0);
 
 	const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	if (!wantsMotion || reduce) return;
+	if (!wantsMotion || reduce) {
+		return () => {
+			redraw = null;
+		};
+	}
 
 	let raf = 0;
 	let startT = 0;
@@ -82,8 +92,25 @@ $effect(() => {
 		raf = requestAnimationFrame(loop);
 	};
 	raf = requestAnimationFrame(loop);
-	return () => cancelAnimationFrame(raf);
+	return () => {
+		redraw = null;
+		cancelAnimationFrame(raf);
+	};
 });
+
+function trackCursor(event: PointerEvent) {
+	if (!reactToCursor || event.pointerType === "touch") return;
+	if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+	const box = canvas.getBoundingClientRect();
+	cursor = { x: event.clientX - box.left, y: event.clientY - box.top };
+	if (!animated) redraw?.(0);
+}
+
+function dropCursor() {
+	if (!cursor) return;
+	cursor = null;
+	if (!animated) redraw?.(0);
+}
 
 function randomize() {
 	const pick = POOL[Math.floor(Math.random() * POOL.length)];
@@ -165,6 +192,10 @@ function download(blob: Blob, extension: "png" | "webm") {
 			class:rounded-card={format === "og" || shape === "rectangle"}
 			style:aspect-ratio={format === "og" ? "1200/630" : "1/1"}
 			style:background-color={PALETTES[paletteName].background}
+			onpointerenter={trackCursor}
+			onpointermove={trackCursor}
+			onpointerleave={dropCursor}
+			onpointercancel={dropCursor}
 			aria-label="Live {format} preview of the mark for seed {seed}, pattern {pattern}, palette {paletteName}"
 		></canvas>
 	</div>
@@ -304,6 +335,30 @@ function download(blob: Blob, extension: "png" | "webm") {
 					class="absolute top-0.5 h-4 w-4 rounded-full bg-fg transition-all"
 					class:left-6={animated}
 					class:left-0.5={!animated}
+				></span>
+			</button>
+		</div>
+
+		<div class="flex items-center justify-between">
+			<span class="mono text-xs uppercase tracking-wider text-faint">react to cursor</span>
+			<button
+				type="button"
+				role="switch"
+				aria-checked={reactToCursor}
+				aria-label="Let the cells react to the cursor"
+				class="relative h-6 w-11 rounded-full border border-line-strong transition-colors disabled:opacity-50"
+				class:bg-brand-dim={reactToCursor && pattern !== "wave"}
+				class:bg-bg={!reactToCursor || pattern === "wave"}
+				onclick={() => {
+					reactToCursor = !reactToCursor;
+					if (!reactToCursor) dropCursor();
+				}}
+				disabled={busy !== null || pattern === "wave"}
+			>
+				<span
+					class="absolute top-0.5 h-4 w-4 rounded-full bg-fg transition-all"
+					class:left-6={reactToCursor}
+					class:left-0.5={!reactToCursor}
 				></span>
 			</button>
 		</div>
