@@ -7,6 +7,7 @@ import {
 	type Pattern,
 	RAMP,
 	render,
+	renderReactive,
 	seedFromString,
 	toSeed,
 	toSVG,
@@ -282,6 +283,124 @@ describe("field", () => {
 		expect(field("7")(0.3, 0.6, 0)).toBe(
 			field(seedFromString("7"))(0.3, 0.6, 0),
 		);
+	});
+});
+
+describe("renderReactive", () => {
+	function recorder() {
+		const cells: { color: string; x: number; y: number }[] = [];
+		const context = {
+			fillStyle: "",
+			font: "",
+			textAlign: "",
+			save() {},
+			restore() {},
+			clearRect() {},
+			beginPath() {},
+			arc() {},
+			clip() {},
+			moveTo() {},
+			lineTo() {},
+			closePath() {},
+			fill() {},
+			fillText() {},
+			fillRect(x: number, y: number, w: number) {
+				if (w > 100) return;
+				cells.push({ color: this.fillStyle as string, x, y });
+			},
+		} as unknown as Canvas2DContext;
+		return { context, cells };
+	}
+
+	function tones(cells: { color: string }[]) {
+		return cells.map((cell) => RAMP.indexOf(cell.color));
+	}
+
+	test("with no pointer it draws exactly what render draws", () => {
+		const plain = recorder();
+		const reactive = recorder();
+		render(plain.context, "still", { size: 240 });
+		renderReactive(reactive.context, "still", { size: 240 });
+		expect(reactive.cells).toEqual(plain.cells);
+	});
+
+	test("wave ignores the pointer, since it has no cell grid", () => {
+		const plain = recorder();
+		const reactive = recorder();
+		render(plain.context, "still", { size: 240, pattern: "wave" });
+		renderReactive(reactive.context, "still", {
+			size: 240,
+			pattern: "wave",
+			pointer: { x: 10, y: 10 },
+		});
+		expect(reactive.cells).toEqual(plain.cells);
+	});
+
+	test("cells near the pointer climb the ramp, far ones do not move", () => {
+		const plain = recorder();
+		const lit = recorder();
+		render(plain.context, "glowing", { size: 240 });
+		renderReactive(lit.context, "glowing", {
+			size: 240,
+			pointer: { x: 20, y: 20 },
+		});
+
+		const near = (cell: { x: number; y: number }) =>
+			Math.hypot(cell.x - 20, cell.y - 20) < 40;
+		const far = (cell: { x: number; y: number }) =>
+			Math.hypot(cell.x - 20, cell.y - 20) > 180;
+		const brightness = (cells: typeof plain.cells, where: typeof near) => {
+			const picked = tones(cells.filter(where));
+			return picked.reduce((sum, tone) => sum + tone, 0) / picked.length;
+		};
+
+		expect(brightness(lit.cells, near)).toBeGreaterThan(
+			brightness(plain.cells, near),
+		);
+		expect(brightness(lit.cells, far)).toBeCloseTo(
+			brightness(plain.cells, far),
+			5,
+		);
+	});
+
+	test("glowRadius and glowBoost tune the reach and the lift", () => {
+		const wide = recorder();
+		const narrow = recorder();
+		const plain = recorder();
+		render(plain.context, "tuned", { size: 240 });
+		renderReactive(wide.context, "tuned", {
+			size: 240,
+			pointer: { x: 120, y: 120 },
+			glowRadius: 0.9,
+		});
+		renderReactive(narrow.context, "tuned", {
+			size: 240,
+			pointer: { x: 120, y: 120 },
+			glowRadius: 0.1,
+		});
+		const changed = (cells: typeof plain.cells) =>
+			cells.filter((cell, i) => cell.color !== plain.cells[i]?.color).length;
+		expect(changed(wide.cells)).toBeGreaterThan(changed(narrow.cells));
+	});
+
+	test("a pointer only lights cells, it never moves them off the grid", () => {
+		const plain = recorder();
+		const lit = recorder();
+		render(plain.context, "stable", { size: 240 });
+		renderReactive(lit.context, "stable", {
+			size: 240,
+			pointer: { x: 60, y: 60 },
+		});
+		const at = (cell: { x: number; y: number }) => `${cell.x},${cell.y}`;
+		const litCells = new Set(lit.cells.map(at));
+		for (const cell of plain.cells) expect(litCells.has(at(cell))).toBe(true);
+		const columns = new Set(plain.cells.map((cell) => cell.x));
+		const rows = new Set(plain.cells.map((cell) => cell.y));
+		for (const cell of lit.cells) {
+			expect(columns.has(cell.x)).toBe(true);
+			expect(rows.has(cell.y)).toBe(true);
+		}
+		expect(lit.cells.length).toBeGreaterThan(plain.cells.length);
 	});
 });
 
