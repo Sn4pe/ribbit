@@ -1,0 +1,33 @@
+---
+import ErrorMark from "../components/ErrorMark.svelte";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="404" description="This page does not exist." footer={false}>
+	<section class="mx-auto flex h-[calc(100svh-4rem)] w-full max-w-5xl items-center px-5 py-8 lg:px-8">
+		<div class="grid w-full items-center gap-10 md:grid-cols-2 md:gap-14">
+			<div>
+				<p class="mono flex items-center gap-3 text-xs uppercase tracking-[0.28em] text-faint">
+					<span class="h-px w-8 bg-line-strong"></span>
+					error 404
+				</p>
+				<h1 class="mt-6 text-3xl font-semibold leading-[1.1] tracking-tight text-fg sm:text-4xl">
+					This page has no seed<span class="text-brand">.</span>
+				</h1>
+				<p class="mt-4 max-w-sm text-base leading-relaxed text-muted">
+					So the error became one. Move over the mark to push the field, click it
+					to switch the lens.
+				</p>
+				<div class="mono mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+					<a class="text-fg transition-colors hover:text-brand-bright" href="/">
+						<span class="text-brand">&larr;</span> Home
+					</a>
+					<a class="text-muted transition-colors hover:text-fg" href="/docs">Docs</a>
+					<a class="text-muted transition-colors hover:text-fg" href="/#playground">Playground</a>
+				</div>
+			</div>
+
+			<ErrorMark client:load code="404" />
+		</div>
+	</section>
+</BaseLayout>

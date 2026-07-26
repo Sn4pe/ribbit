@@ -8,12 +8,14 @@ interface Props {
 	title?: string;
 	description?: string | undefined;
 	structuredData?: Record<string, unknown> | Record<string, unknown>[];
+	footer?: boolean;
 }
 
 const {
 	title = "ribbit",
 	description = "Deterministic generative avatars, canvas marks, SVG, PNG and WebM from any seed. Zero dependencies and no network requests.",
 	structuredData,
+	footer = true,
 } = Astro.props;
 const pageTitle =
 	title === "ribbit"
@@ -56,6 +58,6 @@ const schemas = structuredData
 		<main>
 			<slot />
 		</main>
-		<SiteFooter />
+		{footer && <SiteFooter />}
 	</body>
 </html>
