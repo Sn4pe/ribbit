@@ -178,12 +178,14 @@ interface MarkParams {
 	tile: Tile;
 	reactive: boolean;
 	animate?: boolean;
+	hoverAnimate?: boolean;
 }
 
 function mark(node: HTMLCanvasElement, params: MarkParams) {
 	const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 	let { tile, reactive } = params;
 	let animate = params.animate ?? false;
+	let hoverAnimate = params.hoverAnimate ?? true;
 	let raf = 0;
 	let start = 0;
 	let hovering = false;
@@ -238,7 +240,7 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 				return;
 			}
 		}
-		startLoop();
+		if (hoverAnimate) startLoop();
 	};
 	const leave = () => {
 		hovering = false;
@@ -256,10 +258,11 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 			tile = next.tile;
 			reactive = next.reactive;
 			animate = next.animate ?? false;
+			hoverAnimate = next.hoverAnimate ?? true;
 			if (!reactive) cursor = null;
 			if (animate) {
 				startLoop();
-			} else if (!hovering) {
+			} else if (!hovering || !hoverAnimate) {
 				stopLoop();
 				paint(0);
 			}
@@ -308,7 +311,7 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 		<div class="grid items-start gap-6 px-5 pt-5 sm:grid-cols-[14rem_minmax(0,1fr)] sm:px-7 sm:pt-7">
 			<div>
 				<canvas
-					use:mark={{ tile: selected, reactive: reactiveOn, animate }}
+					use:mark={{ tile: selected, reactive: reactiveOn, animate, hoverAnimate: false }}
 					class="aspect-square w-full rounded-card border border-line"
 					style:background={PALETTES.moss.background}
 					aria-label="Generative mark for the seed {selected.seed}"
