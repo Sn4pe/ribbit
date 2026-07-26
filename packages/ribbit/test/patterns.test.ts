@@ -4,6 +4,7 @@ import {
 	type Canvas2DContext,
 	field,
 	PALETTES,
+	PATTERNS,
 	type Pattern,
 	RAMP,
 	render,
@@ -14,7 +15,6 @@ import {
 	toWebM,
 } from "../src/index.ts";
 
-const PATTERNS: Pattern[] = ["dither", "glyph", "wave"];
 const PALETTE = new Set<string>([BG, ...RAMP]);
 const CUSTOM_PALETTE = {
 	background: "#101018",
@@ -23,6 +23,34 @@ const CUSTOM_PALETTE = {
 
 function fills(svg: string): string[] {
 	return [...svg.matchAll(/fill="(#[0-9a-f]{6})"/g)].map((m) => m[1]);
+}
+
+function recorder() {
+	const cells: { color: string; x: number; y: number }[] = [];
+	const arcs: { x: number; y: number; r: number }[] = [];
+	const context = {
+		fillStyle: "",
+		font: "",
+		textAlign: "",
+		save() {},
+		restore() {},
+		clearRect() {},
+		beginPath() {},
+		clip() {},
+		moveTo() {},
+		lineTo() {},
+		closePath() {},
+		fill() {},
+		fillText() {},
+		arc(x: number, y: number, r: number) {
+			arcs.push({ x, y, r });
+		},
+		fillRect(x: number, y: number, w: number) {
+			if (w > 100) return;
+			cells.push({ color: this.fillStyle as string, x, y });
+		},
+	} as unknown as Canvas2DContext;
+	return { context, cells, arcs };
 }
 
 describe("seed hashing", () => {
@@ -190,6 +218,101 @@ describe("time evolves the field", () => {
 	});
 });
 
+describe("maze composition", () => {
+	function directions(svg: string): Map<string, string> {
+		const cell = 240 / 12;
+		const dirs = new Map<string, string>();
+		for (const m of svg.matchAll(
+			/<path d="M([\d.-]+) ([\d.-]+) L([\d.-]+) ([\d.-]+)/g,
+		)) {
+			const [x1, y1, x2, y2] = m.slice(1, 5).map(Number);
+			const key = `${Math.floor((x1 + x2) / 2 / cell)},${Math.floor((y1 + y2) / 2 / cell)}`;
+			dirs.set(key, y1 > y2 ? "/" : "\\");
+		}
+		return dirs;
+	}
+
+	test("draws both diagonal orientations with stable per-cell direction", () => {
+		const svg = toSVG("maze-check", { pattern: "maze", size: 240 });
+		const again = toSVG("maze-check", { pattern: "maze", size: 240, t: 2 });
+		const dirs = directions(svg);
+		expect(dirs.size).toBeGreaterThan(10);
+		expect(new Set(dirs.values()).size).toBe(2);
+		expect(again).not.toBe(svg);
+		for (const [key, dir] of directions(again)) {
+			if (dirs.has(key)) expect(dirs.get(key)).toBe(dir);
+		}
+	});
+
+	test("the diagonal skeleton is seeded, not a shared wallpaper", () => {
+		const a = directions(toSVG("croak", { pattern: "maze", size: 240 }));
+		const b = directions(toSVG("ribbit", { pattern: "maze", size: 240 }));
+		let same = 0;
+		let differ = 0;
+		for (const [key, dir] of a) {
+			const other = b.get(key);
+			if (other === undefined) continue;
+			if (other === dir) same++;
+			else differ++;
+		}
+		expect(same + differ).toBeGreaterThan(10);
+		expect(same).toBeGreaterThan(0);
+		expect(differ).toBeGreaterThan(0);
+	});
+});
+
+describe("bars composition", () => {
+	test("bars anchor to the cell bottom and scale with tone", () => {
+		const svg = toSVG("bars-check", { pattern: "bars", size: 320 });
+		const cell = 320 / 16;
+		const bars = [
+			...svg.matchAll(
+				/<rect x="[^"]+" y="([^"]+)" width="[^"]+" height="([^"]+)"/g,
+			),
+		].map((m) => ({ y: Number(m[1]), height: Number(m[2]) }));
+		expect(bars.length).toBeGreaterThan(10);
+		for (const bar of bars) {
+			expect(bar.height).toBeGreaterThan(0);
+			expect(bar.height).toBeLessThanOrEqual(cell + 0.1);
+			const bottom = bar.y + bar.height;
+			expect(bottom).toBeCloseTo(Math.round(bottom / cell) * cell, 0);
+		}
+		expect(new Set(bars.map((bar) => bar.height)).size).toBeGreaterThan(3);
+	});
+});
+
+describe("pulse composition", () => {
+	test("dots scale with tone and stay inside their cell", () => {
+		const svg = toSVG("pulse-check", { pattern: "pulse", size: 320 });
+		const dots = [
+			...svg.matchAll(/<circle cx="[^"]+" cy="[^"]+" r="([^"]+)"/g),
+		].map((m) => Number(m[1]));
+		expect(dots.length).toBeGreaterThan(10);
+		const cell = 320 / 16;
+		for (const r of dots) {
+			expect(r).toBeGreaterThan(0);
+			expect(r).toBeLessThanOrEqual(cell / 2);
+		}
+		expect(new Set(dots).size).toBeGreaterThan(3);
+	});
+
+	test("a pointer lights nearby dots via renderReactive", () => {
+		const plain = recorder();
+		const lit = recorder();
+		render(plain.context, "glowing", { size: 240, pattern: "pulse" });
+		renderReactive(lit.context, "glowing", {
+			size: 240,
+			pattern: "pulse",
+			pointer: { x: 20, y: 20 },
+		});
+		const near = (d: { x: number; y: number }) =>
+			Math.hypot(d.x - 20, d.y - 20) < 40;
+		const sumR = (arcs: typeof plain.arcs) =>
+			arcs.filter(near).reduce((s, d) => s + d.r, 0);
+		expect(sumR(lit.arcs)).toBeGreaterThan(sumR(plain.arcs));
+	});
+});
+
 describe("wave composition", () => {
 	test("inverted waves are painted back-to-front", () => {
 		const svg = toSVG("dew-2", { pattern: "wave" });
@@ -287,31 +410,6 @@ describe("field", () => {
 });
 
 describe("renderReactive", () => {
-	function recorder() {
-		const cells: { color: string; x: number; y: number }[] = [];
-		const context = {
-			fillStyle: "",
-			font: "",
-			textAlign: "",
-			save() {},
-			restore() {},
-			clearRect() {},
-			beginPath() {},
-			arc() {},
-			clip() {},
-			moveTo() {},
-			lineTo() {},
-			closePath() {},
-			fill() {},
-			fillText() {},
-			fillRect(x: number, y: number, w: number) {
-				if (w > 100) return;
-				cells.push({ color: this.fillStyle as string, x, y });
-			},
-		} as unknown as Canvas2DContext;
-		return { context, cells };
-	}
-
 	function tones(cells: { color: string }[]) {
 		return cells.map((cell) => RAMP.indexOf(cell.color));
 	}
