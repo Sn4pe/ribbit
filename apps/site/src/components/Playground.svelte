@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
 	PALETTES,
+	PATTERNS,
 	type PaletteName,
 	type Pattern,
 	type Pointer,
@@ -11,8 +12,8 @@ import {
 	toSeed,
 	toWebM,
 } from "ribbit-canvas";
+import Ribbit from "ribbit-canvas/svelte";
 
-const PATTERNS: Pattern[] = ["dither", "glyph", "wave"];
 const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
 const POOL = [
 	"null-frog",
@@ -260,17 +261,25 @@ function download(blob: Blob, extension: "png" | "webm") {
 
 		<div>
 			<span class="mono text-xs uppercase tracking-wider text-faint">pattern</span>
-			<div class="mt-2 grid grid-cols-3 gap-1 rounded-card border border-line-strong bg-bg p-1" role="group" aria-label="Pattern">
+			<div class="mt-2 grid grid-cols-2 gap-2" role="group" aria-label="Pattern">
 				{#each PATTERNS as p (p)}
 					<button
 						type="button"
-						class="mono rounded-[0.35rem] px-2 py-1.5 text-sm transition-colors"
+						class="flex items-center gap-2.5 rounded-card border p-1.5 transition-colors"
+						class:border-brand={pattern === p}
+						class:border-line-strong={pattern !== p}
 						class:bg-brand-dim={pattern === p}
-						class:text-fg={pattern === p}
-						class:text-muted={pattern !== p}
+						class:bg-bg={pattern !== p}
 						aria-pressed={pattern === p}
 						onclick={() => (pattern = p)}
-					>{p}</button>
+					>
+						<Ribbit seed="null-frog" pattern={p} size={36} palette={PALETTES[paletteName]} radius="0.35rem" class="shrink-0" />
+						<span
+							class="mono text-sm"
+							class:text-fg={pattern === p}
+							class:text-muted={pattern !== p}
+						>{p}</span>
+					</button>
 				{/each}
 			</div>
 		</div>
