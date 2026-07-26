@@ -9,13 +9,13 @@ const tiles = [
 	{ seed: "marsh", pattern: "glyph" },
 	{ seed: "lily", pattern: "wave" },
 	{ seed: "frogspawn", pattern: "dither" },
-	{ seed: "reed", pattern: "glyph" },
+	{ seed: "reed", pattern: "maze" },
 	{ seed: "pond", pattern: "wave" },
 	{ seed: "null-frog", pattern: "dither" },
-	{ seed: "brack", pattern: "glyph" },
+	{ seed: "brack", pattern: "pulse" },
 	{ seed: "moss", pattern: "wave" },
 	{ seed: "spore", pattern: "dither" },
-	{ seed: "moss-2", pattern: "glyph" },
+	{ seed: "moss-2", pattern: "bars" },
 	{ seed: "bog", pattern: "wave" },
 ];
 const tile = 140;
