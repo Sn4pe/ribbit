@@ -70,8 +70,10 @@ function tok(color: string, text: string): Token {
 	return { color, text };
 }
 
+let reactiveOn = $derived(reactToCursor && selected?.pattern !== "wave");
+
 let flags = $derived(
-	[animate ? "animated" : "", reactToCursor ? "reactive" : ""].filter(Boolean),
+	[animate ? "animated" : "", reactiveOn ? "reactive" : ""].filter(Boolean),
 );
 
 let snippet = $derived.by(() => {
@@ -228,9 +230,13 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 	const track = (event: PointerEvent) => {
 		if (event.pointerType === "touch") return;
 		hovering = true;
-		if (reactive) {
+		if (reactive && !reduce) {
 			const box = node.getBoundingClientRect();
 			cursor = { x: event.clientX - box.left, y: event.clientY - box.top };
+			if (!animate) {
+				paint(0);
+				return;
+			}
 		}
 		startLoop();
 	};
@@ -302,13 +308,13 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 		<div class="grid items-start gap-6 px-5 pt-5 sm:grid-cols-[14rem_minmax(0,1fr)] sm:px-7 sm:pt-7">
 			<div>
 				<canvas
-					use:mark={{ tile: selected, reactive: reactToCursor, animate }}
+					use:mark={{ tile: selected, reactive: reactiveOn, animate }}
 					class="aspect-square w-full rounded-card border border-line"
 					style:background={PALETTES.moss.background}
 					aria-label="Generative mark for the seed {selected.seed}"
 				></canvas>
 				<p class="mono mt-2 h-4 text-[0.7rem] text-faint">
-					{reactToCursor ? "hover the mark" : ""}
+					{reactiveOn ? "hover the mark" : ""}
 				</p>
 			</div>
 			<div class="min-w-0">
@@ -342,18 +348,18 @@ function mark(node: HTMLCanvasElement, params: MarkParams) {
 						<button
 							type="button"
 							role="switch"
-							aria-checked={reactToCursor}
+							aria-checked={reactiveOn}
 							aria-label="Let the cells react to the cursor"
 							class="relative h-6 w-11 shrink-0 rounded-full border border-line-strong transition-colors focus-visible:border-brand focus-visible:outline-none disabled:opacity-40"
-							class:bg-brand-dim={reactToCursor && selected.pattern !== "wave"}
-							class:bg-surface-2={!reactToCursor || selected.pattern === "wave"}
+							class:bg-brand-dim={reactiveOn}
+							class:bg-surface-2={!reactiveOn}
 							onclick={() => (reactToCursor = !reactToCursor)}
 							disabled={selected.pattern === "wave"}
 						>
 							<span
 								class="absolute top-0.5 h-4 w-4 rounded-full bg-fg transition-all"
-								class:left-6={reactToCursor}
-								class:left-0.5={!reactToCursor}
+								class:left-6={reactiveOn}
+								class:left-0.5={!reactiveOn}
 							></span>
 						</button>
 					</div>

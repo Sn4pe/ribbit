@@ -37,6 +37,7 @@ let format = $state<Preset>("avatar");
 let shape = $state<Shape>("circle");
 let animated = $state(false);
 let reactToCursor = $state(false);
+let reactiveOn = $derived(reactToCursor && pattern !== "wave");
 let busy = $state<"png" | "webm" | null>(null);
 let progress = $state(0);
 let exportError = $state("");
@@ -99,7 +100,7 @@ $effect(() => {
 });
 
 function trackCursor(event: PointerEvent) {
-	if (!reactToCursor || event.pointerType === "touch") return;
+	if (!reactiveOn || event.pointerType === "touch") return;
 	if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 	const box = canvas.getBoundingClientRect();
 	cursor = { x: event.clientX - box.left, y: event.clientY - box.top };
@@ -344,11 +345,11 @@ function download(blob: Blob, extension: "png" | "webm") {
 			<button
 				type="button"
 				role="switch"
-				aria-checked={reactToCursor}
+				aria-checked={reactiveOn}
 				aria-label="Let the cells react to the cursor"
 				class="relative h-6 w-11 rounded-full border border-line-strong transition-colors disabled:opacity-50"
-				class:bg-brand-dim={reactToCursor && pattern !== "wave"}
-				class:bg-bg={!reactToCursor || pattern === "wave"}
+				class:bg-brand-dim={reactiveOn}
+				class:bg-bg={!reactiveOn}
 				onclick={() => {
 					reactToCursor = !reactToCursor;
 					if (!reactToCursor) dropCursor();
@@ -357,8 +358,8 @@ function download(blob: Blob, extension: "png" | "webm") {
 			>
 				<span
 					class="absolute top-0.5 h-4 w-4 rounded-full bg-fg transition-all"
-					class:left-6={reactToCursor}
-					class:left-0.5={!reactToCursor}
+					class:left-6={reactiveOn}
+					class:left-0.5={!reactiveOn}
 				></span>
 			</button>
 		</div>
