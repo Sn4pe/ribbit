@@ -263,8 +263,17 @@ describe.each(PATTERNS)("custom palette with pattern %s", (pattern) => {
 });
 
 describe("built-in palettes", () => {
-	test("ships moss, tide, ember and mono", () => {
-		expect(Object.keys(PALETTES)).toEqual(["moss", "tide", "ember", "mono"]);
+	test("ships a dark and a light variant of each family", () => {
+		expect(Object.keys(PALETTES)).toEqual([
+			"moss",
+			"tide",
+			"ember",
+			"mono",
+			"mossLight",
+			"tideLight",
+			"emberLight",
+			"monoLight",
+		]);
 		for (const palette of Object.values(PALETTES)) {
 			expect(palette.ramp.length).toBeGreaterThanOrEqual(2);
 		}
