@@ -14,9 +14,10 @@ export interface RibbitProps {
 	radius?: number | string;
 	/** Run a requestAnimationFrame loop that evolves the field. Default false. */
 	animated?: boolean;
+	reactive?: boolean;
 	/** Extra class(es) for the canvas element. */
 	class?: string;
 }
 
-declare const Ribbit: Component<RibbitProps & Record<string, unknown>>;
+declare const Ribbit: Component<RibbitProps>;
 export default Ribbit;
