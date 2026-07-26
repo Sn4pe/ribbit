@@ -223,7 +223,11 @@ function mulberry32(a: number): () => number {
 	};
 }
 
-type Field = (u: number, v: number, t: number) => number;
+/**
+ * The deterministic scalar field behind every pattern. Sampled at normalized
+ * coordinates plus a time in seconds, it returns a tone between 0 and 1.
+ */
+export type Field = (u: number, v: number, t: number) => number;
 
 function fieldFn(seed: number): Field {
 	const rng = mulberry32(seed);
@@ -292,6 +296,14 @@ function fieldFn(seed: number): Field {
 		}
 		return Math.max(0, Math.min(1, (s / ws + 1) / 2));
 	};
+}
+
+/**
+ * Samples the field a seed produces, so callers can build their own painters
+ * on top of the same geometry the built-in patterns use.
+ */
+export function field(seed: string | number): Field {
+	return fieldFn(toSeed(seed));
 }
 
 interface WaveLayer {
