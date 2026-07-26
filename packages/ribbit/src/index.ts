@@ -118,6 +118,22 @@ export const PALETTES = {
 		background: "#0b0b0b",
 		ramp: ["#131313", "#242424", "#414141", "#686868", "#9a9a9a", "#dedede"],
 	},
+	mossLight: {
+		background: "#f4f7f2",
+		ramp: ["#e7eee2", "#c9dcc0", "#9dc194", "#6ea269", "#487a49", "#2c5533"],
+	},
+	tideLight: {
+		background: "#eff6f8",
+		ramp: ["#dfeef1", "#b9dde2", "#87c2cd", "#4f9db0", "#2c748c", "#1a4d62"],
+	},
+	emberLight: {
+		background: "#fbf4ee",
+		ramp: ["#f6e6d5", "#eec9a4", "#e0a271", "#c9784a", "#a4552f", "#75371c"],
+	},
+	monoLight: {
+		background: "#f7f7f7",
+		ramp: ["#ededed", "#d3d3d3", "#b0b0b0", "#868686", "#5a5a5a", "#2b2b2b"],
+	},
 } as const satisfies Record<string, Palette>;
 
 export type PaletteName = keyof typeof PALETTES;
