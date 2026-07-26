@@ -64,7 +64,7 @@ render(canvas, "null-frog", { size: 256, pattern: "dither" });
 | --- | --- | --- | --- |
 | `seed` | `string \| number` | required | Stable identity for the mark |
 | `size` | `number` | `32` | Displayed square size in CSS pixels |
-| `pattern` | `"dither" \| "glyph" \| "wave"` | `"dither"` | Rendering language |
+| `pattern` | `"bars" \| "dither" \| "glyph" \| "maze" \| "pulse" \| "wave"` | `"dither"` | Rendering language |
 | `radius` | `number \| string` | `"9999px"` | Circle, rounded square or square presentation |
 | `palette` | `{ background, ramp }` | moss | Overrides the color system |
 | `animated` | `boolean` | `false` | Evolves the field when visible |
@@ -133,11 +133,17 @@ const avatar = await toBlob("ada", {
 | --- | --- | --- |
 | `dither` | Square Bayer cells over a continuous field | Avatars, pixel art, compact marks |
 | `glyph` | The field sampled as monospace symbols | Technical identities, editorial graphics |
+| `pulse` | Dots that swell and brighten with the field | Soft avatars, halftone textures, hover surfaces |
+| `maze` | Seeded diagonals in the 10 PRINT tradition | Retro identities, texture fills, terminal aesthetics |
+| `bars` | Vertical bars rising with the field | Audio-adjacent brands, dashboards, data-flavored marks |
 | `wave` | Five to nine layered contours | Covers, backgrounds, animated surfaces |
 
 <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
   <Ribbit client:visible seed="null-frog" pattern="dither" size={112} radius="10px" animated reactive />
   <Ribbit client:visible seed="null-frog" pattern="glyph" size={112} radius="10px" animated reactive />
+  <Ribbit client:visible seed="null-frog" pattern="pulse" size={112} radius="10px" animated reactive />
+  <Ribbit client:visible seed="null-frog" pattern="maze" size={112} radius="10px" animated reactive />
+  <Ribbit client:visible seed="null-frog" pattern="bars" size={112} radius="10px" animated reactive />
   <Ribbit client:visible seed="null-frog" pattern="wave" size={112} radius="10px" animated />
 </div>
 
@@ -268,8 +274,8 @@ render(canvas, "launch", {
 ```
 
 Only tone 0 is left unpainted, so how much shows through depends on the pattern:
-`glyph` stays around 80% transparent, `wave` around 15%, and `dither` covers
-nearly the whole surface.
+`glyph` and `maze` stay mostly transparent, `pulse` and `bars` around half,
+`wave` around 15%, and `dither` covers nearly the whole surface.
 
 Custom ramps need at least two colors, so a palette override always carries a
 `ramp`.
@@ -282,7 +288,7 @@ retain their composition.
 | --- | --- | --- | --- |
 | `size` | `number` | `200` | Fallback for both dimensions |
 | `width`, `height` | `number` | `size` | Logical dimensions |
-| `pattern` | pattern name | `"dither"` | Dither, glyph or wave renderer |
+| `pattern` | pattern name | `"dither"` | Bars, dither, glyph, maze, pulse or wave renderer |
 | `shape` | `"rectangle" \| "circle"` | `"rectangle"` | Transparent circular crop for core output |
 | `palette` | palette | moss | Background and tonal ramp; `background: null` is transparent |
 | `t` | `number` | `0` | Time in seconds |
