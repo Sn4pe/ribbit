@@ -79,6 +79,6 @@ $effect(() => {
 <canvas
 	bind:this={canvas}
 	class={className}
-	style="width:{size}px;height:{size}px;border-radius:{typeof radius === 'number' ? `${radius}px` : radius};display:block;overflow:hidden;background:#0a0d0b"
+	style="width:{size}px;height:{size}px;border-radius:{typeof radius === 'number' ? `${radius}px` : radius};display:block;overflow:hidden;background:{palette === undefined ? '#0a0d0b' : (palette.background ?? 'transparent')}"
 	aria-hidden="true"
 ></canvas>

@@ -14,7 +14,8 @@ export type Shape = "rectangle" | "circle";
 
 /** Colors used by a mark, from its background to its tonal ramp. */
 export interface Palette {
-	background: string;
+	/** Backdrop color, or `null` to leave the backdrop transparent. */
+	background: string | null;
 	/** Ordered dark-to-light colors. Must contain at least two tones. */
 	ramp: readonly string[];
 }
@@ -132,9 +133,16 @@ function resolvePalette(palette?: Palette): Palette {
 		throw new Error("ribbit: palette.ramp needs at least two colors");
 	}
 	return {
-		background: palette?.background ?? BG,
+		background: palette?.background === undefined ? BG : palette.background,
 		ramp: palette?.ramp ?? RAMP,
 	};
+}
+
+/** Paints the palette backdrop, or leaves the surface transparent when null. */
+function paintBackground(ctx: Ctx, w: number, h: number, palette: Palette) {
+	if (palette.background === null) return;
+	ctx.fillStyle = palette.background;
+	ctx.fillRect(0, 0, w, h);
 }
 
 function assertDimension(value: number, name: string): number {
@@ -384,8 +392,7 @@ function paintDither(
 ) {
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
-	ctx.fillStyle = palette.background;
-	ctx.fillRect(0, 0, w, h);
+	paintBackground(ctx, w, h, palette);
 	const grid = gridFor(w, h, 22);
 	for (let y = 0; y < grid.rows; y++) {
 		for (let x = 0; x < grid.cols; x++) {
@@ -416,8 +423,7 @@ function paintGlyph(
 ) {
 	const f = fieldFn(seed);
 	const ramp = palette.ramp;
-	ctx.fillStyle = palette.background;
-	ctx.fillRect(0, 0, w, h);
+	paintBackground(ctx, w, h, palette);
 	const grid = gridFor(w, h, 13);
 	ctx.textAlign = "center";
 	ctx.font = `${(Math.min(grid.cw, grid.ch) * 0.95).toFixed(1)}px monospace`;
@@ -446,8 +452,7 @@ function paintWave(
 	palette: Palette,
 ) {
 	const field = waveField(seed);
-	ctx.fillStyle = palette.background;
-	ctx.fillRect(0, 0, w, h);
+	paintBackground(ctx, w, h, palette);
 	const N = 48;
 	const layers = field.flip ? [...field.layers].reverse() : field.layers;
 	for (const l of layers) {
@@ -879,7 +884,11 @@ export function toSVG(
 	const paintSVG = SVG_PAINTERS[pattern];
 	if (!paintSVG) throw new Error(`ribbit: unknown pattern "${pattern}"`);
 	const body = paintSVG(normalizedSeed, w, h, options.t ?? 0, palette);
-	const content = `<rect width="${w}" height="${h}" fill="${svgColor(palette.background)}"/>${body}`;
+	const backdrop =
+		palette.background === null
+			? ""
+			: `<rect width="${w}" height="${h}" fill="${svgColor(palette.background)}"/>`;
+	const content = `${backdrop}${body}`;
 	const clipId = `ribbit-circle-${normalizedSeed.toString(16)}-${w}-${h}`;
 	const clipped =
 		options.shape === "circle"
