@@ -68,11 +68,42 @@ render(canvas, "null-frog", { size: 256, pattern: "dither" });
 | `radius` | `number \| string` | `"9999px"` | Circle, rounded square or square presentation |
 | `palette` | `{ background, ramp }` | moss | Overrides the color system |
 | `animated` | `boolean` | `false` | Evolves the field when visible |
+| `reactive` | `boolean` | `false` | Cells light up around the cursor |
 | `className`, `style` | React only | — | Applied to the clipping wrapper |
 | `class` | Svelte only | — | Applied to the canvas |
 
 The component first paints a static frame. When `animated` is enabled, it
 pauses offscreen and respects `prefers-reduced-motion`.
+
+`reactive` makes the cells near the pointer climb the tonal ramp. The glow is
+folded into the field before it is quantized, so the mark lights up rather than
+wearing an overlay, and the geometry of the seed never moves. It is ignored on
+touch, under `prefers-reduced-motion`, and for `wave`, which has no cell grid.
+The two props compose: `animated reactive` gives a field that both evolves and
+answers the cursor.
+
+```tsx
+<RibbitAvatar seed="null-frog" size={96} reactive />
+```
+
+Under the hood this is `renderReactive`, which takes a `pointer` in canvas
+coordinates. Reach for it directly when you drive your own canvas:
+
+```ts
+import { renderReactive } from "ribbit-canvas";
+
+canvas.addEventListener("pointermove", (event) => {
+  const box = canvas.getBoundingClientRect();
+  renderReactive(ctx, "null-frog", {
+    size: 256,
+    pointer: { x: event.clientX - box.left, y: event.clientY - box.top },
+  });
+});
+```
+
+With no pointer it *is* `render`, so static exports are untouched and the mark
+at rest is exactly the one ribbit generates. `glowRadius` (default `0.42` of the
+shortest side) and `glowBoost` (default `0.6`) tune reach and lift.
 
 ## Sizes & shapes
 
@@ -105,8 +136,8 @@ const avatar = await toBlob("ada", {
 | `wave` | Five to nine layered contours | Covers, backgrounds, animated surfaces |
 
 <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-  <Ribbit client:visible seed="null-frog" pattern="dither" size={112} radius="10px" animated />
-  <Ribbit client:visible seed="null-frog" pattern="glyph" size={112} radius="10px" animated />
+  <Ribbit client:visible seed="null-frog" pattern="dither" size={112} radius="10px" animated reactive />
+  <Ribbit client:visible seed="null-frog" pattern="glyph" size={112} radius="10px" animated reactive />
   <Ribbit client:visible seed="null-frog" pattern="wave" size={112} radius="10px" animated />
 </div>
 

@@ -70,6 +70,8 @@ const webm = await toWebM("ribbit", {
 - `toDataURL(seed, options?)` and `toBlob(seed, options?)` produce a PNG.
 - `toWebM(seed, options?)` records an animated WebM in the browser.
 - `toSVG(seed, options?)` produces a standalone SVG string.
+- `renderReactive(target, seed, options?)` renders a mark whose cells react to a `pointer`.
+- `field(seed)` samples the deterministic field behind every pattern, for custom painters.
 - `PALETTES` provides moss, tide, ember and mono, each with a `*Light` variant; `RAMP` and `BG` alias moss.
 
 A palette is `{ background, ramp }`. `ramp` is ordered background-to-foreground
@@ -114,3 +116,15 @@ import { RibbitAvatar } from "ribbit-canvas/react";
 Renders one static frame on mount, so the mark is always visible. `animated`
 runs a `requestAnimationFrame` loop that is paused when offscreen and forced
 static under `prefers-reduced-motion`. Device pixel ratio is capped at 1.5.
+
+Both adapters also take `reactive`, which lights up the cells around the
+cursor. The glow enters the field before it is quantized, so the mark changes
+tone instead of wearing an overlay and the seed's geometry never moves. It is
+ignored on touch, under `prefers-reduced-motion`, and for `wave`. Compose it
+with `animated` for a field that evolves *and* answers the pointer.
+
+For your own canvas, `renderReactive(target, seed, { pointer, ...options })`
+does the same thing — `pointer` is `{ x, y }` in canvas coordinates, and
+`glowRadius` (default `0.42` of the shortest side) and `glowBoost` (default
+`0.6`) tune it. With no pointer it is exactly `render`, so exports and marks at
+rest are untouched.
