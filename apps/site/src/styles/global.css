@@ -183,6 +183,10 @@
 	white-space: pre-wrap;
 	word-break: break-word;
 }
+.code-block--scroll {
+	white-space: pre;
+	word-break: normal;
+}
 .code-copy,
 .install-tabs__copy {
 	position: absolute;
@@ -233,4 +237,15 @@
 	position: relative;
 	margin-top: 0;
 	padding-right: 4.75rem;
+}
+.install-tabs__list--split {
+	justify-content: space-between;
+	align-items: flex-end;
+}
+.install-tabs__copy--inline {
+	position: static;
+	margin-bottom: 0.35rem;
+}
+.install-tabs pre.code-block--scroll {
+	padding-right: 1.25rem;
 }
